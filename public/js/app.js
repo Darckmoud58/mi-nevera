@@ -388,13 +388,8 @@ function publicUrl() {
 function drawQr() {
   const url = publicUrl();
   $("qrUrl").textContent = url;
-  if (window.QRCode) {
-    QRCode.toCanvas($("qrCanvas"), url, {
-      width: 280,
-      margin: 2,
-      color: { dark: "#1c2428", light: "#fffdf8" },
-    });
-  }
+  $("qrImage").src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&ecc=M&data=" + encodeURIComponent(url);
 }
 
 function bind() {

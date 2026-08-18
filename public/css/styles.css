@@ -373,7 +373,7 @@ h1 {
   padding: 8px 4px 16px;
 }
 
-.qr-card canvas {
+.qr-card img {
   display: block;
   margin: 18px auto;
   background: #fff;

@@ -132,7 +132,7 @@
             Imprime o guarda este QR y pégalo en la puerta. Al escanearlo se abre el inventario
             para ver qué hay y qué falta.
           </p>
-          <canvas id="qrCanvas" width="280" height="280" aria-label="Código QR de Mi Nevera"></canvas>
+          <img id="qrImage" width="280" height="280" alt="Código QR de Mi Nevera" />
           <p class="qr-url" id="qrUrl"></p>
           <div class="form-actions">
             <button type="button" class="btn primary" id="printQrBtn">Imprimir QR</button>
@@ -160,7 +160,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
     <script src="./js/app.js" type="module"></script>
   </body>
 </html>

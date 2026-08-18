@@ -12,7 +12,9 @@ Inventario del refrigerador de casa. Al escanear el QR de la puerta se abre el *
 
 ## Publicar
 
-- GitHub: este repositorio.
-- Netlify: conectar el repo y publicar la carpeta raíz. La función `/api/inventario` guarda el inventario en la nube para que toda la casa vea lo mismo al escanear el QR.
+- GitHub: [Darckmoud58/mi-nevera](https://github.com/Darckmoud58/mi-nevera)
+- Netlify: [conectar este repo](https://app.netlify.com/start/deploy?repository=https://github.com/Darckmoud58/mi-nevera)
+
+En Netlify, la carpeta publicada es `public` y las funciones están en `netlify/functions`. La ruta `/api/inventario` guarda el inventario en la nube para que toda la casa vea lo mismo al escanear el QR.
 
 Si la nube no está disponible, la app guarda una copia en el teléfono.
