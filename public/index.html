@@ -64,13 +64,14 @@
           </label>
           <div class="chips" id="filterChips" role="tablist" aria-label="Filtros"></div>
         </div>
+        <div class="home-tip" id="homeTip" hidden></div>
         <div class="list" id="inventoryList"></div>
       </section>
 
       <section class="view" id="view-compras" data-view="compras">
         <div class="panel-intro">
           <h2>Lista de compras</h2>
-          <p>Lo que está bajo mínimo, en cero o ya no está en la nevera.</p>
+            <p>Lo que se acabó, está caducado o hay que reponer.</p>
         </div>
         <div class="list" id="shopList"></div>
       </section>
@@ -79,12 +80,14 @@
         <form class="form" id="itemForm" autocomplete="off">
           <div class="panel-intro">
             <h2 id="formTitle">Registrar producto</h2>
-            <p>Anota qué entra a la nevera y el mínimo para saber cuándo comprar.</p>
+            <p>Leche y crema no se pesan: solo si hay o no, y si ya caducó.</p>
           </div>
           <input type="hidden" id="itemId" />
+          <input type="hidden" id="itemTracking" value="hay" />
+          <input type="hidden" id="itemQty" value="1" />
           <label>
             Nombre
-            <input id="itemName" name="name" required maxlength="80" placeholder="Ej. Leche entera" />
+            <input id="itemName" name="name" required maxlength="80" placeholder="Ej. Crema Lala, huevos, jitomate" />
           </label>
           <div class="grid-2">
             <label>
@@ -96,19 +99,38 @@
               <select id="itemLocation" name="location"></select>
             </label>
           </div>
-          <div class="grid-3">
-            <label>
-              Cantidad
-              <input id="itemQty" name="qty" type="number" min="0" step="0.5" value="1" required />
-            </label>
-            <label>
-              Unidad
-              <select id="itemUnit" name="unit"></select>
-            </label>
-            <label>
-              Mínimo
-              <input id="itemMin" name="minQty" type="number" min="0" step="0.5" value="1" />
-            </label>
+          <fieldset class="mode-box">
+            <legend>¿Cómo lo controlas?</legend>
+            <div class="mode-pick">
+              <button type="button" class="mode-btn is-on" data-mode="hay" id="modeHay">Hay o no hay</button>
+              <button type="button" class="mode-btn" data-mode="cuenta" id="modeCuenta">Se cuenta</button>
+            </div>
+            <p class="hint" id="modeHint">Para crema, leche o salsa: un toque si está o ya se acabó.</p>
+          </fieldset>
+          <div id="presenceFields">
+            <fieldset class="mode-box">
+              <legend>¿Hay ahora?</legend>
+              <div class="mode-pick">
+                <button type="button" class="mode-btn is-on" id="presentYes">Sí hay</button>
+                <button type="button" class="mode-btn" id="presentNo">No hay</button>
+              </div>
+            </fieldset>
+          </div>
+          <div id="countFields" hidden>
+            <div class="grid-3">
+              <label>
+                Cantidad
+                <input id="itemCountQty" name="countQty" type="number" min="0" step="1" value="1" />
+              </label>
+              <label>
+                Unidad
+                <select id="itemUnit" name="unit"></select>
+              </label>
+              <label>
+                Mínimo
+                <input id="itemMin" name="minQty" type="number" min="0" step="1" value="1" />
+              </label>
+            </div>
           </div>
           <label>
             Caducidad

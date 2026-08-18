@@ -198,6 +198,34 @@ h1 {
   color: #fff;
 }
 
+.home-tip {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f8e7c4;
+  color: #5c3d00;
+  animation: pop 0.28s ease;
+}
+
+.home-tip.expired,
+.home-tip.low {
+  background: #f8d4ce;
+  color: #6d261c;
+}
+
+.home-tip strong,
+.home-tip span {
+  display: block;
+}
+
+.home-tip span {
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.92;
+}
+
 .panel-intro {
   margin-bottom: 16px;
 }
@@ -220,8 +248,23 @@ h1 {
   gap: 8px 12px;
   padding: 14px;
   border: 1px solid var(--line);
+  border-left: 5px solid #dce8e0;
   border-radius: var(--radius);
   background: #fff;
+  animation: pop 0.22s ease;
+}
+
+.card.soon {
+  border-left-color: #d4a017;
+}
+
+.card.low {
+  border-left-color: #c48a14;
+}
+
+.card.expired {
+  border-left-color: var(--tomato);
+  background: #fff8f6;
 }
 
 .card h3 {
@@ -287,6 +330,101 @@ h1 {
   min-width: 42px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+.switch {
+  align-self: start;
+  min-width: 86px;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  background: #efe9dc;
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+}
+
+.switch.on {
+  background: var(--sage);
+  color: #fff;
+}
+
+.tip {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fbf8f1;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.card.expired .tip {
+  background: #f8d4ce;
+  color: #6d261c;
+}
+
+.card.soon .tip {
+  background: #fde3c8;
+  color: #7a3f0c;
+}
+
+.mode-box {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fbf8f1;
+}
+
+.mode-box legend {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 6px;
+}
+
+.mode-pick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 10px;
+  font: inherit;
+  font-weight: 700;
+  background: #efe9dc;
+  color: var(--ink);
+}
+
+.mode-btn.is-on {
+  background: var(--sage);
+  color: #fff;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .card-actions {
