@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1e2a2e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Mi Nevera" />
+    <meta name="description" content="Inventario del refrigerador de casa: qué hay, qué falta y qué comprar." />
+    <title>Mi Nevera — Inventario de casa</title>
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="./icons/fridge.svg" />
+    <link rel="apple-touch-icon" href="./icons/fridge.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28">
+            <rect x="7" y="3" width="18" height="26" rx="3" fill="#e8efe9" />
+            <rect x="8.5" y="4.5" width="15" height="10" rx="1.4" fill="#c5d6c9" />
+            <rect x="8.5" y="16" width="15" height="11.5" rx="1.4" fill="#d7e4da" />
+            <circle cx="21.2" cy="9.4" r="1.1" fill="#3f6f5b" />
+            <circle cx="21.2" cy="21.6" r="1.1" fill="#3f6f5b" />
+          </svg>
+        </div>
+        <div>
+          <p class="eyebrow">Casa</p>
+          <h1>Mi Nevera</h1>
+        </div>
+      </div>
+      <div class="sync-pill" id="syncPill" title="Estado de sincronización">Este teléfono</div>
+    </header>
+
+    <section class="summary" id="summary">
+      <article>
+        <strong id="statTotal">0</strong>
+        <span>en nevera</span>
+      </article>
+      <article>
+        <strong id="statLow">0</strong>
+        <span>por reponer</span>
+      </article>
+      <article>
+        <strong id="statExpiry">0</strong>
+        <span>por caducar</span>
+      </article>
+    </section>
+
+    <main class="sheet">
+      <section class="view is-active" id="view-inventario" data-view="inventario">
+        <div class="toolbar">
+          <label class="search">
+            <span class="sr-only">Buscar producto</span>
+            <input id="searchInput" type="search" placeholder="Buscar leche, huevos, jitomate…" autocomplete="off" />
+          </label>
+          <div class="chips" id="filterChips" role="tablist" aria-label="Filtros"></div>
+        </div>
+        <div class="list" id="inventoryList"></div>
+      </section>
+
+      <section class="view" id="view-compras" data-view="compras">
+        <div class="panel-intro">
+          <h2>Lista de compras</h2>
+          <p>Lo que está bajo mínimo, en cero o ya no está en la nevera.</p>
+        </div>
+        <div class="list" id="shopList"></div>
+      </section>
+
+      <section class="view" id="view-registrar" data-view="registrar">
+        <form class="form" id="itemForm" autocomplete="off">
+          <div class="panel-intro">
+            <h2 id="formTitle">Registrar producto</h2>
+            <p>Anota qué entra a la nevera y el mínimo para saber cuándo comprar.</p>
+          </div>
+          <input type="hidden" id="itemId" />
+          <label>
+            Nombre
+            <input id="itemName" name="name" required maxlength="80" placeholder="Ej. Leche entera" />
+          </label>
+          <div class="grid-2">
+            <label>
+              Categoría
+              <select id="itemCategory" name="category"></select>
+            </label>
+            <label>
+              Ubicación
+              <select id="itemLocation" name="location"></select>
+            </label>
+          </div>
+          <div class="grid-3">
+            <label>
+              Cantidad
+              <input id="itemQty" name="qty" type="number" min="0" step="0.5" value="1" required />
+            </label>
+            <label>
+              Unidad
+              <select id="itemUnit" name="unit"></select>
+            </label>
+            <label>
+              Mínimo
+              <input id="itemMin" name="minQty" type="number" min="0" step="0.5" value="1" />
+            </label>
+          </div>
+          <label>
+            Caducidad
+            <input id="itemExpiry" name="expiry" type="date" />
+          </label>
+          <label>
+            Nota
+            <input id="itemNotes" name="notes" maxlength="120" placeholder="Marca, sabor o para quién es" />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary" id="saveBtn">Guardar en nevera</button>
+            <button type="button" class="btn ghost" id="cancelEditBtn" hidden>Cancelar edición</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="view" id="view-qr" data-view="qr">
+        <div class="qr-card">
+          <h2>Código para la nevera</h2>
+          <p>
+            Imprime o guarda este QR y pégalo en la puerta. Al escanearlo se abre el inventario
+            para ver qué hay y qué falta.
+          </p>
+          <canvas id="qrCanvas" width="280" height="280" aria-label="Código QR de Mi Nevera"></canvas>
+          <p class="qr-url" id="qrUrl"></p>
+          <div class="form-actions">
+            <button type="button" class="btn primary" id="printQrBtn">Imprimir QR</button>
+            <button type="button" class="btn ghost" id="copyLinkBtn">Copiar enlace</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="dock" aria-label="Navegación">
+      <button class="dock-btn is-active" data-go="inventario">
+        <span>Inventario</span>
+      </button>
+      <button class="dock-btn" data-go="compras">
+        <span>Compras</span>
+        <i id="shopBadge" hidden>0</i>
+      </button>
+      <button class="dock-btn dock-plus" data-go="registrar">
+        <span>Registrar</span>
+      </button>
+      <button class="dock-btn" data-go="qr">
+        <span>QR</span>
+      </button>
+    </nav>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="./js/app.js" type="module"></script>
+  </body>
+</html>

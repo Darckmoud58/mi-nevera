@@ -1,0 +1,18 @@
+{
+  "name": "Mi Nevera",
+  "short_name": "Nevera",
+  "description": "Inventario del refrigerador de casa",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1e2a2e",
+  "theme_color": "#1e2a2e",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "./icons/fridge.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
