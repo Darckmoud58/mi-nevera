@@ -31,8 +31,25 @@ const FILTERS = [
   { id: "nevera", label: "Hay" },
   { id: "bajo", label: "Comprar" },
   { id: "caduca", label: "Caduca" },
-  { id: "tirar", label: "Tirar" },
+  { id: "tirar", label: "Revisar" },
 ];
+
+const IDEAS = [
+  { kicker: "Merienda fácil", text: "Yogurt natural con fruta: proteína, poco lio y se siente casero." },
+  { kicker: "Desayuno", text: "Un huevo en la mañana ayuda a llegar más tranquilo hasta la comida." },
+  { kicker: "Agua primero", text: "A veces no es hambre: un vaso de agua al abrir la nevera aclara la idea." },
+  { kicker: "Colores", text: "Si hay dos verduras de distinto color, hay más vitaminas en el plato sin pensarlo." },
+  { kicker: "Plátano maduro", text: "Si ya está pintón, licuado o panqué. No tiene que ir al bote." },
+  { kicker: "Sobras con estilo", text: "El pollo de ayer en quesadillas rinde y no se siente repetición." },
+  { kicker: "Crema al rescate", text: "Un toque de crema alcanza para enchiladas de toda la casa. Úsala pronto." },
+  { kicker: "Tortillas", text: "Bolsa bien cerrada duran más. Si se secan, sopa de tortilla y quedan nuevas." },
+  { kicker: "Lonche completo", text: "Queso + una verdura gana a solo pan. Más sabor, más rato satisfecho." },
+  { kicker: "Porciones", text: "Congela en tupper chicos. El tú de mañana te lo va a agradecer." },
+  { kicker: "Jitomate", text: "Los más blanditos primero: salsa o recaudo. Los firmes pueden esperar." },
+  { kicker: "Leche", text: "Si está bien, atole o café con leche. Calcio sin complicarse." },
+];
+
+const SUGGEST_NAMES = ["Pan", "Huevos", "Plátanos", "Jitomate", "Cebolla", "Tortillas", "Leche", "Frijoles"];
 
 const state = {
   items: [],
@@ -41,6 +58,7 @@ const state = {
   query: "",
   cloud: false,
   editingId: null,
+  ideaIndex: 0,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -95,7 +113,21 @@ function statusLabel(status, item) {
   return "Hay";
 }
 
+function guessCategory(name) {
+  const n = String(name || "").toLowerCase();
+  if (/leche|crema|yogurt|yogur|jocoque|mantequilla|queso/.test(n)) return "Lácteos";
+  if (/huevo|pollo|carne|res|cerdo|jamon|jamón|salchicha/.test(n)) return "Carnes y huevos";
+  if (/jitomate|tomate|limon|limón|naranja|manzana|cebolla|chile|aguacate|platano|plátano|lechuga|fruta/.test(n)) {
+    return "Frutas y verduras";
+  }
+  if (/jugo|agua|refresco|cerveza|atole|horchata/.test(n)) return "Bebidas";
+  if (/hielo|nugget|helado/.test(n)) return "Congelados";
+  if (/salsa|aderezo|mayonesa|catsup|ketchup|mostaza|mermelada/.test(n)) return "Salsas y condimentos";
+  return "Otros";
+}
+
 function needsBuy(item) {
+  if (item.wanted) return true;
   const st = statusOf(item);
   if (st === "expired") return true;
   if (!inFridge(item)) return true;
@@ -107,73 +139,39 @@ function needsToss(item) {
   return inFridge(item) && statusOf(item) === "expired";
 }
 
-function adviceFor(item) {
+function kitchenNudge(item) {
   const days = daysUntil(item.expiry);
-  const cat = item.category;
-  const dairy = cat === "Lácteos" || PRESENCE_WORDS.test(item.name.toLowerCase());
-  const meat = cat === "Carnes y huevos";
-  const leftover = cat === "Sobras";
-  const produce = cat === "Frutas y verduras";
+  const n = item.name.toLowerCase();
+  const dairy = item.category === "Lácteos" || PRESENCE_WORDS.test(n);
+  const produce = item.category === "Frutas y verduras";
+  const meat = item.category === "Carnes y huevos";
+  const leftover = item.category === "Sobras";
 
   if (needsToss(item)) {
-    if (dairy) {
-      return {
-        title: "Ya debería tirarse",
-        text: "No la pruebes. Si huele agrio, está cortada o ya pasó la fecha, al bote y a la lista de compras.",
-      };
-    }
-    if (meat) {
-      return {
-        title: "Ya debería tirarse",
-        text: "No la cocines para “salvarla”. Carne o huevo dudoso se tira. Compra fresco.",
-      };
-    }
-    if (leftover) {
-      return {
-        title: "Ya debería tirarse",
-        text: "Las sobras no duran más de 3 días. Si ya caducó o no recuerdas de cuándo es, tírala.",
-      };
-    }
-    return {
-      title: "Ya debería tirarse",
-      text: "Si está caducado o se ve mal, no lo uses. Tíralo y anótalo para comprar.",
-    };
+    if (dairy) return "Mejor no usarla. Tírala y anota otra para el súper.";
+    if (meat) return "Si duda, no la cocines. Reponer fresco es más barato que enfermarse.";
+    if (leftover) return "Las sobras ya cumplieron. Un tupper limpio para lo de hoy.";
+    return "Si ya pasó de fecha, al bote y a la lista. Sin drama.";
   }
-
-  if (!inFridge(item)) {
-    return {
-      title: "Hay que comprar",
-      text: "Se acabó. Queda en la lista hasta que lo marques como comprado.",
-    };
-  }
-
   if (days === 0) {
-    if (dairy) return { title: "Úsala hoy", text: "Café, atole, enchiladas o un dip. No la dejes para mañana." };
-    if (produce) return { title: "Úsala hoy", text: "Licuado, salsa o recaudo. Si está muy madura, hoy es el día." };
-    return { title: "Úsala hoy", text: "Priorízala en la comida de hoy para que no se desperdicie." };
+    if (dairy) return "Hoy rinde en enchiladas, atole o un café.";
+    if (produce) return "Hoy es buen día para salsa, licuado o recaudo.";
+    return "Úsalo hoy y la nevera respira.";
   }
-
   if (days !== null && days > 0 && days <= 3) {
-    if (dairy) return { title: "Se acerca la fecha", text: "Huele al abrir. Si está bien, úsala en estos días; si duda, tírala." };
-    if (meat) return { title: "Se acerca la fecha", text: "Cocínala ya o pásala al congelador hoy mismo." };
-    if (leftover) return { title: "Las sobras no esperan", text: "Termínalas hoy o mañana. Después ya no conviene." };
-    return { title: "Se acerca la fecha", text: "Ponlo primero en el menú de estos días." };
+    if (meat) return "Cocínalo o al congelador. En dos días ya no conviene esperar.";
+    if (leftover) return "Termínalo en quesadillas o sopa. Mañana ya es otro cuento.";
+    return "Estos días, ponlo primero en la comida.";
   }
-
-  if (dairy) {
-    return { title: "Todo bien", text: "Al abrir: olor, color y que no esté cortada. La nevera no hace milagros si ya se echó a perder." };
-  }
-  if (produce) {
-    return { title: "Todo bien", text: "Revisa el cajón: lo más maduro se usa primero." };
-  }
-  return { title: "Todo bien", text: "Sigue en la nevera. Si se acaba o caduca, aquí te avisa qué comprar." };
+  return "";
 }
 
-function buyLabel(item) {
-  if (needsToss(item)) return "Tirar y comprar";
-  if (trackingOf(item) === "hay") return "Comprar";
-  const missing = Math.max(1, Number(item.minQty || 1) - Number(item.qty || 0));
-  return `Comprar ${missing} ${item.unit || "pzas"}`;
+function shopWhy(item) {
+  if (needsToss(item)) return "Caducó · reponer";
+  if (item.wanted && inFridge(item)) return "Lo anotaste";
+  if (!inFridge(item)) return "Se acabó";
+  if (trackingOf(item) === "cuenta") return "Quedan pocas";
+  return "Traer";
 }
 
 function toast(message) {
@@ -308,7 +306,7 @@ function filteredItems() {
 
 function itemCard(item, mode) {
   const st = statusOf(item);
-  const tip = adviceFor(item);
+  const nudge = kitchenNudge(item);
   const presence = trackingOf(item) === "hay";
   const control = presence
     ? `<button type="button" class="switch ${inFridge(item) ? "on" : ""}" data-act="toggle" data-id="${item.id}">
@@ -340,7 +338,7 @@ function itemCard(item, mode) {
       </div>
     </div>
     ${control}
-    <p class="tip"><strong>${escapeHtml(tip.title)}.</strong> ${escapeHtml(tip.text)}</p>
+    ${nudge && (st === "soon" || st === "expired") ? `<p class="idea-line">${escapeHtml(nudge)}</p>` : ""}
     <div class="card-actions">${actions}</div>
   </article>`;
 }
@@ -386,23 +384,17 @@ function renderSummary() {
   badge.textContent = shopCount;
 }
 
-function renderHomeTip() {
-  const tipBox = $("homeTip");
-  const urgent = state.items
-    .map((item) => ({ item, st: statusOf(item) }))
-    .sort((a, b) => {
-      const rank = { expired: 0, soon: 1, low: 2, ok: 3 };
-      return rank[a.st] - rank[b.st];
-    })[0];
-  if (!urgent || urgent.st === "ok") {
-    tipBox.hidden = true;
-    tipBox.innerHTML = "";
-    return;
-  }
-  const tip = adviceFor(urgent.item);
-  tipBox.hidden = false;
-  tipBox.className = `home-tip ${urgent.st}`;
-  tipBox.innerHTML = `<strong>${escapeHtml(urgent.item.name)} · ${escapeHtml(tip.title)}</strong><span>${escapeHtml(tip.text)}</span>`;
+function renderIdea() {
+  const care = state.items.find(needsToss);
+  const pool = care
+    ? [
+        { kicker: "Un toque de orden", text: `La ${care.name} ya no conviene. Tírala desde Inventario y déjala en compras.` },
+        ...IDEAS,
+      ]
+    : IDEAS;
+  const idea = pool[Math.abs(state.ideaIndex) % pool.length];
+  $("ideaKicker").textContent = idea.kicker;
+  $("ideaText").textContent = idea.text;
 }
 
 function renderInventory() {
@@ -419,34 +411,35 @@ function renderInventory() {
 
 function renderShop() {
   const items = state.items.filter(needsBuy).sort((a, b) => a.name.localeCompare(b.name, "es"));
+  const onList = new Set(items.map((i) => i.name.toLowerCase()));
+  const ideas = SUGGEST_NAMES.filter((n) => !onList.has(n.toLowerCase())).slice(0, 5);
+  $("shopSuggest").innerHTML = ideas.length
+    ? `<p>Súmale un toque</p><div class="suggest-row">${ideas
+        .map((n) => `<button type="button" class="chip" data-suggest="${escapeHtml(n)}">${escapeHtml(n)}</button>`)
+        .join("")}</div>`
+    : "";
   $("shopList").innerHTML = items.length
     ? items
-        .map((item) => {
-          const tip = adviceFor(item);
-          return `<article class="card ${statusOf(item)}">
+        .map(
+          (item) => `<article class="shop-row">
+            <button type="button" class="check" data-act="bought" data-id="${item.id}" aria-label="Ya lo compré"></button>
             <div>
               <h3>${escapeHtml(item.name)}</h3>
-              <div class="meta">
-                <span class="pill ${statusOf(item)}">${buyLabel(item)}</span>
-                ${item.expiry ? `<span>Cad. ${formatDate(item.expiry)}</span>` : ""}
-              </div>
+              <p>${escapeHtml(shopWhy(item))}</p>
             </div>
-            <p class="tip"><strong>${escapeHtml(tip.title)}.</strong> ${escapeHtml(tip.text)}</p>
-            <div class="card-actions">
-              ${needsToss(item) ? `<button class="tiny danger" data-act="toss" data-id="${item.id}">Ya lo tiré</button>` : ""}
-              <button class="tiny buy" data-act="bought" data-id="${item.id}">Ya lo compré</button>
-              <button class="tiny" data-act="edit" data-id="${item.id}">Editar</button>
+            <div class="shop-side">
+              ${needsToss(item) ? `<button class="tiny danger" data-act="toss" data-id="${item.id}">Ya la tiré</button>` : `<button class="tiny" data-act="unlist" data-id="${item.id}">Quitar</button>`}
             </div>
-          </article>`;
-        })
+          </article>`
+        )
         .join("")
-    : emptyState("Nada que comprar", "La nevera está al día. Buen control.");
+    : emptyState("Lista en blanco", "Escribe arriba o toca una idea. Como el papel, pero se tacha solita.");
 }
 
 function render() {
   renderFilters();
   renderSummary();
-  renderHomeTip();
+  renderIdea();
   renderInventory();
   renderShop();
   updateSyncPill();
@@ -509,11 +502,20 @@ async function onListClick(event) {
     state.items = state.items.filter((i) => i.id !== item.id);
     toast("Producto quitado");
   }
+  if (btn.dataset.act === "unlist") {
+    if (item.source === "shop" && Number(item.qty) === 0) {
+      state.items = state.items.filter((i) => i.id !== item.id);
+    } else {
+      item.wanted = false;
+    }
+    toast(`${item.name} salió de la lista`);
+  }
   if (btn.dataset.act === "edit") {
     fillForm(item);
     return;
   }
   if (btn.dataset.act === "bought") {
+    item.wanted = false;
     if (trackingOf(item) === "hay") {
       item.qty = 1;
       item.expiry = "";
@@ -524,6 +526,46 @@ async function onListClick(event) {
     }
   }
   await save();
+}
+
+async function addToShop(event) {
+  event.preventDefault();
+  const name = $("shopAddName").value.trim();
+  if (!name) return;
+  const existing = state.items.find((i) => i.name.toLowerCase() === name.toLowerCase());
+  if (existing) {
+    if (needsBuy(existing)) {
+      toast(`${existing.name} ya está en la lista`);
+    } else {
+      existing.wanted = true;
+      existing.updatedAt = new Date().toISOString();
+      toast(`${existing.name} se agregó a compras`);
+      await save();
+    }
+  } else {
+    const category = guessCategory(name);
+    const tracking = guessTracking(name, category);
+    state.items.unshift({
+      id: uid(),
+      name,
+      category,
+      location: "Estante medio",
+      tracking,
+      qty: 0,
+      unit: tracking === "hay" ? "hay" : "pzas",
+      minQty: 1,
+      expiry: "",
+      notes: "",
+      wanted: true,
+      source: "shop",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    toast(`${name} se agregó a la lista`);
+    await save();
+  }
+  $("shopAddName").value = "";
+  $("shopAddName").focus();
 }
 
 async function onSubmit(event) {
@@ -603,6 +645,23 @@ function bind() {
 
   $("inventoryList").addEventListener("click", onListClick);
   $("shopList").addEventListener("click", onListClick);
+  $("shopSuggest").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-suggest]");
+    if (!chip) return;
+    $("shopAddName").value = chip.dataset.suggest;
+    addToShop({ preventDefault() {} });
+  });
+  $("ideaNext").addEventListener("click", () => {
+    state.ideaIndex += 1;
+    try {
+      sessionStorage.setItem("mi-nevera-idea", String(state.ideaIndex));
+    } catch {
+      /* ignore */
+    }
+    renderIdea();
+    buzz();
+  });
+  $("shopAddForm").addEventListener("submit", addToShop);
   $("itemForm").addEventListener("submit", onSubmit);
   $("cancelEditBtn").addEventListener("click", () => {
     resetForm();
@@ -619,6 +678,11 @@ function bind() {
 }
 
 async function init() {
+  try {
+    state.ideaIndex = Number(sessionStorage.getItem("mi-nevera-idea") || 0) || 0;
+  } catch {
+    state.ideaIndex = 0;
+  }
   bind();
   await load();
   const hash = location.hash.replace("#", "");

@@ -64,15 +64,25 @@
           </label>
           <div class="chips" id="filterChips" role="tablist" aria-label="Filtros"></div>
         </div>
-        <div class="home-tip" id="homeTip" hidden></div>
+        <div class="idea-card" id="ideaCard">
+          <p class="idea-kicker" id="ideaKicker">Una idea</p>
+          <p class="idea-text" id="ideaText"></p>
+          <button type="button" class="idea-next" id="ideaNext">Otra idea</button>
+        </div>
         <div class="list" id="inventoryList"></div>
       </section>
 
       <section class="view" id="view-compras" data-view="compras">
         <div class="panel-intro">
           <h2>Lista de compras</h2>
-            <p>Lo que se acabó, está caducado o hay que reponer.</p>
+          <p>Anota, tacha y listo. Como el papel del refri, pero más limpio.</p>
         </div>
+        <form class="shop-add" id="shopAddForm" autocomplete="off">
+          <label class="sr-only" for="shopAddName">Agregar a la lista</label>
+          <input id="shopAddName" maxlength="80" placeholder="¿Qué hay que traer?" required />
+          <button type="submit" class="btn primary">Agregar</button>
+        </form>
+        <div class="suggest" id="shopSuggest"></div>
         <div class="list" id="shopList"></div>
       </section>
 
@@ -80,7 +90,7 @@
         <form class="form" id="itemForm" autocomplete="off">
           <div class="panel-intro">
             <h2 id="formTitle">Registrar producto</h2>
-            <p>Leche y crema no se pesan: solo si hay o no, y si ya caducó.</p>
+            <p>Leche y crema: solo si hay o no. Huevos y jitomates: se cuentan.</p>
           </div>
           <input type="hidden" id="itemId" />
           <input type="hidden" id="itemTracking" value="hay" />

@@ -1,4 +1,4 @@
-const CACHE = "mi-nevera-v3";
+const CACHE = "mi-nevera-v5";
 const ASSETS = ["./", "./index.html", "./css/styles.css", "./js/app.js", "./manifest.json", "./icons/fridge.svg"];
 
 self.addEventListener("install", (event) => {
