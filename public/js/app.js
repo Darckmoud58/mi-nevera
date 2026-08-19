@@ -382,6 +382,19 @@ function renderSummary() {
   const badge = $("shopBadge");
   badge.hidden = shopCount === 0;
   badge.textContent = shopCount;
+  renderHello();
+}
+
+function renderHello() {
+  const el = $("helloLine");
+  if (!el) return;
+  const n = Number($("statTotal").textContent);
+  const low = Number($("statLow").textContent);
+  const exp = Number($("statExpiry").textContent);
+  if (!n) el.textContent = "Hoy partimos de cero. ¡A llenar la nevera!";
+  else if (exp) el.textContent = "Hay de qué… y una cosita por revisar.";
+  else if (low) el.textContent = "Hay de qué, y unas cositas para el súper.";
+  else el.textContent = "Hoy la nevera está de buenas.";
 }
 
 function renderIdea() {
@@ -704,8 +717,9 @@ function bindChat() {
 
 function openChat() {
   $("chatPanel").hidden = false;
+  document.body.classList.add("chat-open");
   if (!$("chatLog").dataset.ready) {
-    addBubble("jarvis", "Hola. Soy Jarvis. Pídeme recetas aunque falte algo: te pregunto si las haces y anoto los ingredientes en compras.");
+    addBubble("jarvis", "¡Hola! Soy Jarvis. Pídeme recetas aunque falte algo: si te late, anoto los ingredientes en compras.");
     $("chatLog").dataset.ready = "1";
   }
   $("chatInput").focus();
@@ -713,6 +727,7 @@ function openChat() {
 
 function closeChat() {
   $("chatPanel").hidden = true;
+  document.body.classList.remove("chat-open");
 }
 
 function addBubble(who, text) {

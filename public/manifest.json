@@ -4,8 +4,8 @@
   "description": "Inventario del refrigerador de casa",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#1e2a2e",
-  "theme_color": "#1e2a2e",
+  "background_color": "#ffe7cc",
+  "theme_color": "#ffb14a",
   "lang": "es",
   "icons": [
     {
