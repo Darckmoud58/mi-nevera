@@ -139,6 +139,17 @@ export async function signInEmail(email) {
 
 export async function signInGoogle() {
   if (!client) throw new Error("Falta configurar Supabase");
+  try {
+    const res = await fetch(`${config.url}/auth/v1/settings`, {
+      headers: { apikey: config.anonKey },
+    });
+    const settings = await res.json();
+    if (!settings?.external?.google) {
+      throw new Error("Google aún no está activo. Entre con el correo.");
+    }
+  } catch (error) {
+    if (/aún no está activo/i.test(String(error.message))) throw error;
+  }
   const { error } = await client.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: `${location.origin}${location.pathname}` },
