@@ -11,8 +11,8 @@ let household = null;
 let members = [];
 let role = "";
 
-export function isConfigured() {
-  return Boolean(config.url && config.anonKey);
+export function hasCloud() {
+  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 }
 
 export function getSession() {

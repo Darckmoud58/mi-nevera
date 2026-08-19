@@ -8,12 +8,12 @@ import {
   getMembers,
   getRole,
   getSession,
+  hasCloud,
   initCloud,
   isConfigured,
   joinWithToken,
   loadHousehold,
   loadInventory,
-  onAuth,
   peekInvite,
   renameHousehold,
   saveConfig,
@@ -648,41 +648,47 @@ function showGate(id, on) {
 }
 
 async function bootCloud() {
-  const { configured, session } = await initCloud();
-  showGate("authGate", false);
-  showGate("houseGate", false);
-  state.houseReady = false;
-
-  if (!configured) {
-    await load();
-    render();
-    renderHogar();
-    return;
-  }
-
-  if (!session) {
-    showGate("authGate", true);
-    renderHogar();
-    return;
-  }
-
   try {
+    const { configured, session } = await initCloud();
+    if (!configured) {
+      showGate("authGate", false);
+      showGate("houseGate", false);
+      state.houseReady = false;
+      await load();
+      render();
+      renderHogar();
+      return;
+    }
+
+    if (!session) {
+      showGate("houseGate", false);
+      showGate("authGate", true);
+      renderHogar();
+      return;
+    }
+
     const house = await loadHousehold();
     if (!house) {
       if (peekInvite()) {
         toast(explainError("Invitación inválida o caducada"));
       }
+      showGate("authGate", false);
       showGate("houseGate", true);
       renderHogar();
       return;
     }
+    showGate("authGate", false);
+    showGate("houseGate", false);
     state.houseReady = true;
     await load();
     render();
     if (getRole() === "guest") toast("Entraste como visita: puedes ver, no editar");
   } catch (error) {
+    showGate("houseGate", false);
+    showGate("authGate", true);
+    const hint = $("authHint");
+    if (hint) hint.textContent = explainError(error);
     toast(explainError(error));
-    showGate("houseGate", true);
   }
 }
 
@@ -1161,16 +1167,14 @@ async function init() {
     state.ideaIndex = 0;
   }
   bind();
-  onAuth(() => {
-    /* la sesión de Google vuelve con un recargo de página */
-  });
+  if (hasCloud()) showGate("authGate", true);
   await bootCloud();
   const hash = location.hash.replace("#", "");
   if (!document.body.classList.contains("gated")) {
     setView(["inventario", "compras", "registrar", "qr", "hogar"].includes(hash) ? hash : "inventario");
   }
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js").then((reg) => reg.update()).catch(() => {});
   }
 }
 
