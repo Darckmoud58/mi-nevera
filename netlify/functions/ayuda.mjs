@@ -173,8 +173,8 @@ async function tryOpenAIModels(url, key, messages, extraHeaders) {
 }
 
 async function chatGemini({ base, key, messages }) {
-  const model = process.env.AI_MODEL || "gemini-2.5-flash";
-  const url = `${String(base).replace(/\/$/, "")}/v1beta/models/${model}:generateContent`;
+  const preferred = process.env.AI_MODEL;
+  const models = [...new Set([preferred, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"].filter(Boolean))];
   const system = messages.find((m) => m.role === "system")?.content || "";
   const contents = messages
     .filter((m) => m.role !== "system")
@@ -182,28 +182,55 @@ async function chatGemini({ base, key, messages }) {
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": key,
-    },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 900 },
-    }),
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: system }] },
+    contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 900 },
   });
-  const raw = await res.text();
-  if (!res.ok) throw new Error(`${res.status} ${raw.slice(0, 240)}`);
-  const data = JSON.parse(raw);
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("").trim();
-  if (!text) throw new Error("sin texto");
-  return text;
+  let last = "sin modelo";
+  for (const model of models) {
+    const url = `${String(base).replace(/\/$/, "")}/v1beta/models/${model}:generateContent`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key,
+      },
+      body,
+    });
+    const raw = await res.text();
+    if (!res.ok) {
+      last = `${res.status} ${raw.slice(0, 180)}`;
+      continue;
+    }
+    const data = JSON.parse(raw);
+    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("").trim();
+    if (text) return text;
+    last = "sin texto";
+  }
+  throw new Error(last);
 }
 
 async function askModel(messages) {
   const attempts = [];
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiBase = process.env.GOOGLE_GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
+  if (geminiKey) {
+    attempts.push(() => chatGemini({ base: geminiBase, key: geminiKey, messages }));
+  }
+
+  const groq = process.env.GROQ_API_KEY;
+  if (groq) {
+    attempts.push(() =>
+      chatOpenAI({
+        url: "https://api.groq.com/openai/v1/chat/completions",
+        key: groq,
+        model: process.env.AI_MODEL || "llama-3.1-8b-instant",
+        messages,
+      })
+    );
+  }
 
   const gatewayKey = process.env.NETLIFY_AI_GATEWAY_KEY;
   const gatewayBase = process.env.NETLIFY_AI_GATEWAY_BASE_URL;
@@ -219,24 +246,6 @@ async function askModel(messages) {
     if (!already) attempts.push(() => tryOpenAIModels(url, openaiKey, messages));
   } else if (openaiKey && !gatewayKey) {
     attempts.push(() => tryOpenAIModels(completionsUrl(openaiBase), openaiKey, messages));
-  }
-
-  const groq = process.env.GROQ_API_KEY;
-  if (groq) {
-    attempts.push(() =>
-      chatOpenAI({
-        url: "https://api.groq.com/openai/v1/chat/completions",
-        key: groq,
-        model: process.env.AI_MODEL || "llama-3.3-70b-versatile",
-        messages,
-      })
-    );
-  }
-
-  const geminiKey = process.env.GEMINI_API_KEY;
-  const geminiBase = process.env.GOOGLE_GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
-  if (geminiKey) {
-    attempts.push(() => chatGemini({ base: geminiBase, key: geminiKey, messages }));
   }
 
   const routerKey = process.env.OPENROUTER_API_KEY;
