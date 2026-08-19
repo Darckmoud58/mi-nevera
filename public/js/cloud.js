@@ -1,4 +1,5 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
 
 const KEYS = "mi-nevera-supabase";
 const HOUSE_KEY = "mi-nevera-hogar";
@@ -61,6 +62,9 @@ async function resolveConfig() {
     }
   } catch {
     /* sin función o sin env */
+  }
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    return { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
   }
   return readLocalConfig();
 }

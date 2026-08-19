@@ -1,5 +1,5 @@
-const CACHE = "mi-nevera-v12";
-const ASSETS = ["./", "./index.html", "./css/styles.css", "./js/app.js", "./js/cloud.js", "./manifest.json", "./icons/fridge.svg"];
+const CACHE = "mi-nevera-v13";
+const ASSETS = ["./", "./index.html", "./css/styles.css", "./js/app.js", "./js/cloud.js", "./js/config.js", "./manifest.json", "./icons/fridge.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
