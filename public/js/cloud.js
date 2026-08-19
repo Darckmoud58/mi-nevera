@@ -159,6 +159,10 @@ function inviteTokenFromUrl() {
   return params.get("invitar") || "";
 }
 
+export function peekInvite() {
+  return inviteTokenFromUrl();
+}
+
 export function parseInviteInput(value) {
   let token = String(value || "").trim();
   try {
