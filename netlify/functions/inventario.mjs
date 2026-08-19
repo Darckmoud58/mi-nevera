@@ -12,6 +12,13 @@ export default async (req) => {
     return new Response("", { headers: cors });
   }
 
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    return new Response(JSON.stringify({ error: "El inventario ahora vive en el hogar" }), {
+      status: 410,
+      headers: cors,
+    });
+  }
+
   try {
     const store = getStore("mi-nevera");
 

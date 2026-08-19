@@ -1,3 +1,29 @@
+import {
+  canEdit,
+  canInvite,
+  createHousehold,
+  createInvite,
+  explainError,
+  getHousehold,
+  getMembers,
+  getRole,
+  getSession,
+  initCloud,
+  isConfigured,
+  joinWithToken,
+  loadHousehold,
+  loadInventory,
+  onAuth,
+  peekInvite,
+  renameHousehold,
+  saveConfig,
+  saveInventory,
+  signInEmail,
+  signInGoogle,
+  signOut,
+  userLabel,
+} from "./cloud.js";
+
 const STORAGE_KEY = "mi-nevera-v1";
 const API_URL = "/api/inventario";
 
@@ -59,6 +85,7 @@ const state = {
   cloud: false,
   editingId: null,
   ideaIndex: 0,
+  houseReady: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -194,6 +221,21 @@ function persistLocal() {
 }
 
 async function persistCloud() {
+  if (state.houseReady) {
+    if (!canEdit()) {
+      state.cloud = true;
+      updateSyncPill();
+      return;
+    }
+    try {
+      await saveInventory(state.items);
+      state.cloud = true;
+    } catch {
+      state.cloud = false;
+    }
+    updateSyncPill();
+    return;
+  }
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -214,7 +256,36 @@ async function save() {
   render();
 }
 
+function loadLocalItems() {
+  try {
+    const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    state.items = Array.isArray(local.items) ? local.items.map(normalizeItem) : [];
+  } catch {
+    state.items = [];
+  }
+}
+
 async function load() {
+  if (state.houseReady) {
+    try {
+      const items = await loadInventory();
+      if (Array.isArray(items) && items.length) {
+        state.items = items.map(normalizeItem);
+        state.cloud = true;
+        persistLocal();
+        return;
+      }
+      loadLocalItems();
+      if (state.items.length && canEdit()) {
+        await saveInventory(state.items);
+        state.cloud = true;
+      }
+      return;
+    } catch {
+      loadLocalItems();
+      return;
+    }
+  }
   try {
     const res = await fetch(API_URL, { headers: { Accept: "application/json" } });
     if (res.ok) {
@@ -229,12 +300,7 @@ async function load() {
   } catch {
     /* usa copia local */
   }
-  try {
-    const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    state.items = Array.isArray(local.items) ? local.items.map(normalizeItem) : [];
-  } catch {
-    state.items = [];
-  }
+  loadLocalItems();
 }
 
 function normalizeItem(item) {
@@ -245,7 +311,13 @@ function normalizeItem(item) {
 
 function updateSyncPill() {
   const pill = $("syncPill");
-  pill.textContent = state.cloud ? "Nube familiar" : "Este teléfono";
+  const house = getHousehold();
+  if (state.houseReady && house) {
+    pill.textContent = house.name;
+    pill.classList.add("cloud");
+    return;
+  }
+  pill.textContent = state.cloud ? "Nube familiar" : "Hogar";
   pill.classList.toggle("cloud", state.cloud);
 }
 
@@ -282,6 +354,7 @@ function setView(view) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("is-active", v.dataset.view === view));
   document.querySelectorAll(".dock-btn").forEach((b) => b.classList.toggle("is-active", b.dataset.go === view));
   if (view === "qr") drawQr();
+  if (view === "hogar") renderHogar();
   if (view === "registrar" && !state.editingId) resetForm();
   history.replaceState(null, "", view === "inventario" ? "./" : `./#${view}`);
 }
@@ -455,7 +528,162 @@ function render() {
   renderIdea();
   renderInventory();
   renderShop();
+  if (state.view === "hogar") renderHogar();
   updateSyncPill();
+  document.body.classList.toggle("readonly", state.houseReady && !canEdit());
+}
+
+function roleLabel(value) {
+  if (value === "owner") return "Dueño";
+  if (value === "guest") return "Visita";
+  return "Familia";
+}
+
+function renderHogar() {
+  const box = $("hogarBody");
+  if (!box) return;
+  if (!isConfigured()) {
+    box.innerHTML = `<form class="form hogar-form" id="setupForm">
+      <p>Crea un proyecto Free en <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer">supabase.com</a>, corre el SQL de la carpeta supabase y pega aquí las dos claves públicas.</p>
+      <label>URL del proyecto
+        <input id="setupUrl" required placeholder="https://xxxx.supabase.co" />
+      </label>
+      <label>anon public
+        <input id="setupKey" required placeholder="eyJ..." />
+      </label>
+      <button type="submit" class="btn primary">Guardar y entrar</button>
+      <p class="hint">No pongas la service_role. Esa no se comparte.</p>
+    </form>`;
+    $("setupForm").addEventListener("submit", onSetup);
+    return;
+  }
+  if (!getSession()) {
+    box.innerHTML = `<div class="empty"><h3>Entra primero</h3><p>Usa el correo o Google. Luego creas el hogar e invitas.</p></div>`;
+    return;
+  }
+  const house = getHousehold();
+  if (!house) {
+    box.innerHTML = `<div class="empty"><h3>Aún no hay hogar</h3><p>Créalo arriba o abre el enlace de invitación.</p></div>`;
+    return;
+  }
+  const people = getMembers()
+    .map(
+      (m) =>
+        `<li><strong>${escapeHtml(m.display_name || "Familiar")}</strong> · ${roleLabel(m.role)}</li>`
+    )
+    .join("");
+  const ownerBits =
+    getRole() === "owner"
+      ? `<form id="renameForm" class="hogar-rename">
+          <label>Nombre
+            <input id="renameName" maxlength="60" value="${escapeHtml(house.name)}" />
+          </label>
+          <button type="submit" class="btn ghost">Guardar nombre</button>
+        </form>`
+      : "";
+  const inviteBits = canInvite()
+    ? `<div class="form-actions">
+        <button type="button" class="btn primary" id="inviteAdult">Invitar a la familia</button>
+        <button type="button" class="btn ghost" id="inviteGuest">Invitar visita (solo mira)</button>
+      </div>
+      <p class="hint" id="inviteHint">El enlace dura 7 días. Mándalo por WhatsApp.</p>`
+    : `<p class="hint">Puedes ver la nevera. Quien te invitó puede darte permiso para editar.</p>`;
+  box.innerHTML = `${ownerBits}
+    <h3 class="hogar-title">Quién está</h3>
+    <ul class="hogar-list">${people}</ul>
+    ${inviteBits}
+    <p class="hint">Sesión: ${escapeHtml(userLabel() || "cuenta")}</p>
+    <button type="button" class="btn ghost" id="signOutBtn">Cerrar sesión</button>`;
+  $("renameForm")?.addEventListener("submit", onRenameHouse);
+  $("inviteAdult")?.addEventListener("click", () => onInvite("adult"));
+  $("inviteGuest")?.addEventListener("click", () => onInvite("guest"));
+  $("signOutBtn")?.addEventListener("click", onSignOut);
+}
+
+async function onSetup(event) {
+  event.preventDefault();
+  try {
+    await saveConfig({ url: $("setupUrl").value, anonKey: $("setupKey").value });
+    toast("Claves guardadas");
+    await bootCloud();
+  } catch (error) {
+    toast(explainError(error));
+  }
+}
+
+async function onRenameHouse(event) {
+  event.preventDefault();
+  try {
+    await renameHousehold($("renameName").value);
+    toast("Nombre actualizado");
+    renderHogar();
+    updateSyncPill();
+  } catch (error) {
+    toast(explainError(error));
+  }
+}
+
+async function onInvite(inviteRole) {
+  try {
+    const url = await createInvite(inviteRole);
+    await navigator.clipboard.writeText(url);
+    $("inviteHint").textContent = "Enlace copiado. Pégalo en WhatsApp.";
+    toast("Invitación copiada");
+  } catch (error) {
+    toast(explainError(error));
+  }
+}
+
+async function onSignOut() {
+  await signOut();
+  state.houseReady = false;
+  state.cloud = false;
+  await bootCloud();
+}
+
+function showGate(id, on) {
+  const el = $(id);
+  if (el) el.hidden = !on;
+  document.body.classList.toggle("gated", Boolean(!$("authGate").hidden || !$("houseGate").hidden));
+}
+
+async function bootCloud() {
+  const { configured, session } = await initCloud();
+  showGate("authGate", false);
+  showGate("houseGate", false);
+  state.houseReady = false;
+
+  if (!configured) {
+    await load();
+    render();
+    renderHogar();
+    return;
+  }
+
+  if (!session) {
+    showGate("authGate", true);
+    renderHogar();
+    return;
+  }
+
+  try {
+    const house = await loadHousehold();
+    if (!house) {
+      if (peekInvite()) {
+        toast(explainError("Invitación inválida o caducada"));
+      }
+      showGate("houseGate", true);
+      renderHogar();
+      return;
+    }
+    state.houseReady = true;
+    await load();
+    render();
+    if (getRole() === "guest") toast("Entraste como visita: puedes ver, no editar");
+  } catch (error) {
+    toast(explainError(error));
+    showGate("houseGate", true);
+  }
 }
 
 function findItem(id) {
@@ -499,6 +727,10 @@ async function onListClick(event) {
   if (!btn) return;
   const item = findItem(btn.dataset.id);
   if (!item) return;
+  if (state.houseReady && !canEdit() && btn.dataset.act !== "edit") {
+    toast("En este hogar solo puedes consultar");
+    return;
+  }
   buzz();
   if (btn.dataset.act === "toggle") {
     item.qty = inFridge(item) ? 0 : 1;
@@ -542,6 +774,10 @@ async function onListClick(event) {
 }
 
 async function putOnShopList(name, { quiet = false } = {}) {
+  if (state.houseReady && !canEdit()) {
+    if (!quiet) toast("En este hogar solo puedes consultar");
+    return false;
+  }
   const label = String(name || "").trim();
   if (!label) return false;
   const existing = state.items.find((i) => i.name.toLowerCase() === label.toLowerCase());
@@ -591,6 +827,10 @@ async function addToShop(event) {
 
 async function onSubmit(event) {
   event.preventDefault();
+  if (state.houseReady && !canEdit()) {
+    toast("En este hogar solo puedes consultar");
+    return;
+  }
   const tracking = currentTracking();
   const payload = {
     id: $("itemId").value || uid(),
@@ -636,7 +876,13 @@ function bind() {
   fillSelect($("itemUnit"), UNITS);
 
   document.querySelectorAll(".dock-btn").forEach((btn) => {
-    btn.addEventListener("click", () => setView(btn.dataset.go));
+    btn.addEventListener("click", () => {
+      if (btn.dataset.go === "registrar" && state.houseReady && !canEdit()) {
+        toast("En este hogar solo puedes consultar");
+        return;
+      }
+      setView(btn.dataset.go);
+    });
   });
 
   $("modeHay").addEventListener("click", () => setTracking("hay"));
@@ -696,6 +942,48 @@ function bind() {
     await navigator.clipboard.writeText(publicUrl());
     toast("Enlace copiado");
   });
+  $("syncPill").addEventListener("click", () => setView("hogar"));
+  $("emailForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    $("emailBtn").disabled = true;
+    $("authHint").textContent = "Revisa el correo. El enlace llega en un minuto.";
+    try {
+      await signInEmail($("emailInput").value);
+      toast("Te mandé el enlace");
+    } catch (error) {
+      $("authHint").textContent = explainError(error);
+    } finally {
+      $("emailBtn").disabled = false;
+    }
+  });
+  $("googleBtn").addEventListener("click", async () => {
+    try {
+      await signInGoogle();
+    } catch (error) {
+      $("authHint").textContent = explainError(error);
+    }
+  });
+  $("houseForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await createHousehold($("houseName").value);
+      toast("Hogar listo");
+      await bootCloud();
+    } catch (error) {
+      toast(explainError(error));
+    }
+  });
+  $("joinForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await joinWithToken($("joinToken").value);
+      toast("Ya eres de la familia");
+      await bootCloud();
+    } catch (error) {
+      toast(explainError(error));
+    }
+  });
+  $("gateSignOut").addEventListener("click", onSignOut);
   bindChat();
 }
 
@@ -873,10 +1161,14 @@ async function init() {
     state.ideaIndex = 0;
   }
   bind();
-  await load();
+  onAuth(() => {
+    /* la sesión de Google vuelve con un recargo de página */
+  });
+  await bootCloud();
   const hash = location.hash.replace("#", "");
-  setView(["inventario", "compras", "registrar", "qr"].includes(hash) ? hash : "inventario");
-  render();
+  if (!document.body.classList.contains("gated")) {
+    setView(["inventario", "compras", "registrar", "qr", "hogar"].includes(hash) ? hash : "inventario");
+  }
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }

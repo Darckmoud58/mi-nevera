@@ -97,13 +97,16 @@ h1 {
 }
 
 .sync-pill {
+  font: inherit;
   font-size: 12px;
   font-weight: 700;
   padding: 8px 12px;
+  border: 0;
   border-radius: 999px;
   background: #fff;
   color: #7a6458;
   box-shadow: 0 4px 0 rgba(61, 43, 34, 0.08);
+  cursor: pointer;
 }
 
 .sync-pill.cloud {
@@ -802,6 +805,108 @@ body.chat-open .fab {
   transform: translateX(-50%) translateY(0);
 }
 
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(900px 380px at 90% -40px, #ffd27a 0%, transparent 58%),
+    var(--paper);
+}
+
+.gate[hidden] {
+  display: none !important;
+}
+
+.gate-card {
+  width: min(420px, 100%);
+  background: var(--card);
+  border-radius: 24px;
+  padding: 22px 18px 18px;
+  box-shadow: var(--shadow);
+}
+
+.gate-card h2 {
+  margin: 4px 0 8px;
+  font-size: 1.45rem;
+}
+
+.gate-card p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.gate-card form,
+.join-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.gate-card label,
+.hogar-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gate-card input,
+.hogar-form input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.gate-card .btn,
+.hogar-form .btn {
+  width: 100%;
+}
+
+.hogar-title {
+  margin: 18px 0 8px;
+  font-size: 1rem;
+}
+
+.hogar-list {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.hogar-list li {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.hogar-rename {
+  display: grid;
+  gap: 8px;
+}
+
+body.gated .sheet,
+body.gated .summary,
+body.gated .dock,
+body.gated .fab,
+body.gated .topbar {
+  visibility: hidden;
+}
+
+body.readonly .shop-add {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .chat {
   position: fixed;
   left: 12px;
@@ -987,7 +1092,8 @@ body.chat-open .fab {
   .form-actions,
   #view-inventario,
   #view-compras,
-  #view-registrar {
+  #view-registrar,
+  #view-hogar {
     display: none !important;
   }
 

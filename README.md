@@ -20,4 +20,6 @@ En Netlify, la carpeta publicada es `public` y las funciones están en `netlify/
 
 Si la nube no está disponible, la app guarda una copia en el teléfono.
 
-Jarvis usa el AI Gateway de Netlify (sin claves en el repo). Si quieres otro modelo, puedes definir `AI_MODEL`, `GROQ_API_KEY` o `GEMINI_API_KEY` en Netlify.
+Para **cuentas, hogares e invitaciones** (plan Free de Supabase, $0) sigue [supabase/SETUP.md](supabase/SETUP.md). Cuando existan `SUPABASE_URL` y `SUPABASE_ANON_KEY` en Netlify, cada familia entra con correo o Google y ya no se usa el inventario público.
+
+Jarvis usa Gemini u otro modelo definido en Netlify (`GEMINI_API_KEY`). Las claves no van en el repo.

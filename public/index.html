@@ -40,7 +40,7 @@
           <p class="hello" id="helloLine">Hoy sí se come rico</p>
         </div>
       </div>
-      <div class="sync-pill" id="syncPill" title="Estado de sincronización">Este teléfono</div>
+      <button type="button" class="sync-pill" id="syncPill" title="Hogar y sincronización">Este teléfono</button>
     </header>
 
     <section class="summary" id="summary">
@@ -160,6 +160,14 @@
         </form>
       </section>
 
+      <section class="view" id="view-hogar" data-view="hogar">
+        <div class="panel-intro">
+          <h2>Hogar</h2>
+          <p>Una nevera para toda la familia. Entras con correo o Google, invitas, y todos ven lo mismo.</p>
+        </div>
+        <div id="hogarBody"></div>
+      </section>
+
       <section class="view" id="view-qr" data-view="qr">
         <div class="qr-card">
           <h2>Código para la nevera</h2>
@@ -221,6 +229,46 @@
         <button type="submit" class="btn primary" id="chatSend">Enviar</button>
       </form>
     </aside>
+
+    <div class="gate" id="authGate" hidden>
+      <div class="gate-card">
+        <p class="eyebrow">Mi Nevera</p>
+        <h2>Entra al hogar</h2>
+        <p>Gratis. Correo con enlace o Google. Luego invitas a la familia.</p>
+        <form id="emailForm">
+          <label>
+            Correo
+            <input id="emailInput" type="email" required placeholder="tu@correo.com" autocomplete="email" />
+          </label>
+          <button type="submit" class="btn primary" id="emailBtn">Enviarme el enlace</button>
+        </form>
+        <button type="button" class="btn ghost" id="googleBtn">Continuar con Google</button>
+        <p class="hint" id="authHint"></p>
+      </div>
+    </div>
+
+    <div class="gate" id="houseGate" hidden>
+      <div class="gate-card">
+        <p class="eyebrow">Primer paso</p>
+        <h2>Tu hogar</h2>
+        <p>Crea la nevera de la casa o pega el código que te mandaron.</p>
+        <form id="houseForm">
+          <label>
+            Nombre del hogar
+            <input id="houseName" maxlength="60" placeholder="Ej. Casa, Depto 4B" />
+          </label>
+          <button type="submit" class="btn primary">Crear hogar</button>
+        </form>
+        <form id="joinForm" class="join-form">
+          <label>
+            ¿Te invitaron?
+            <input id="joinToken" maxlength="80" placeholder="Código o pega el enlace" autocomplete="off" />
+          </label>
+          <button type="submit" class="btn ghost">Unirme</button>
+        </form>
+        <button type="button" class="btn ghost" id="gateSignOut">Salir de esta cuenta</button>
+      </div>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
