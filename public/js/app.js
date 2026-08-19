@@ -675,6 +675,78 @@ function bind() {
     await navigator.clipboard.writeText(publicUrl());
     toast("Enlace copiado");
   });
+  bindChat();
+}
+
+const CHAT_CHIPS = ["¿Qué puedo cocinar hoy?", "¿Qué ya caducó?", "¿Qué falta en el súper?", "¿Hay leche?"];
+const chatHistory = [];
+
+function bindChat() {
+  $("chatChips").innerHTML = CHAT_CHIPS.map((q) => `<button type="button" class="chip" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`).join("");
+  $("askOpen").addEventListener("click", openChat);
+  $("askClose").addEventListener("click", closeChat);
+  $("chatForm").addEventListener("submit", onChatSubmit);
+  $("chatChips").addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-q]");
+    if (!chip) return;
+    $("chatInput").value = chip.dataset.q;
+    onChatSubmit({ preventDefault() {} });
+  });
+}
+
+function openChat() {
+  $("chatPanel").hidden = false;
+  if (!$("chatLog").dataset.ready) {
+    addBubble("jarvis", "Hola. Soy Jarvis. Pregúntame qué hay, qué caduca, qué falta o qué puedes cocinar con esta nevera.");
+    $("chatLog").dataset.ready = "1";
+  }
+  $("chatInput").focus();
+}
+
+function closeChat() {
+  $("chatPanel").hidden = true;
+}
+
+function addBubble(who, text) {
+  const el = document.createElement("div");
+  el.className = `bubble ${who}`;
+  el.textContent = text;
+  $("chatLog").appendChild(el);
+  $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  return el;
+}
+
+async function onChatSubmit(event) {
+  event.preventDefault();
+  const question = $("chatInput").value.trim();
+  if (!question) return;
+  $("chatInput").value = "";
+  addBubble("me", question);
+  chatHistory.push({ role: "user", content: question });
+  const wait = addBubble("jarvis busy", "Estoy viendo la nevera…");
+  $("chatSend").disabled = true;
+  try {
+    const res = await fetch("/api/ayuda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question,
+        items: state.items,
+        history: chatHistory.slice(-6),
+      }),
+    });
+    const data = await res.json();
+    const reply = data.reply || "Ahora mismo no pude responder. Intenta de nuevo.";
+    wait.classList.remove("busy");
+    wait.textContent = reply;
+    chatHistory.push({ role: "jarvis", content: reply });
+  } catch {
+    wait.classList.remove("busy");
+    wait.textContent = "Se me fue la señal. Revisa la red y pregúntame otra vez.";
+  } finally {
+    $("chatSend").disabled = false;
+    $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  }
 }
 
 async function init() {

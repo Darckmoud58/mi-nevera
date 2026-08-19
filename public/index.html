@@ -37,7 +37,10 @@
           <h1>Mi Nevera</h1>
         </div>
       </div>
-      <div class="sync-pill" id="syncPill" title="Estado de sincronización">Este teléfono</div>
+      <div class="top-actions">
+        <button type="button" class="ask-btn" id="askOpen">Preguntar</button>
+        <div class="sync-pill" id="syncPill" title="Estado de sincronización">Este teléfono</div>
+      </div>
     </header>
 
     <section class="summary" id="summary">
@@ -189,6 +192,23 @@
         <span>QR</span>
       </button>
     </nav>
+
+    <aside class="chat" id="chatPanel" hidden>
+      <div class="chat-head">
+        <div>
+          <p class="eyebrow">Jarvis</p>
+          <h2>Tu nevera, en conversación</h2>
+        </div>
+        <button type="button" class="chat-close" id="askClose" aria-label="Cerrar">Cerrar</button>
+      </div>
+      <div class="chat-log" id="chatLog"></div>
+      <div class="chat-chips" id="chatChips"></div>
+      <form class="chat-form" id="chatForm">
+        <label class="sr-only" for="chatInput">Pregunta</label>
+        <input id="chatInput" maxlength="400" placeholder="¿Qué puedo cocinar hoy?" autocomplete="off" />
+        <button type="submit" class="btn primary" id="chatSend">Enviar</button>
+      </form>
+    </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
