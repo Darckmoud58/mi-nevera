@@ -719,7 +719,7 @@ function openChat() {
   $("chatPanel").hidden = false;
   document.body.classList.add("chat-open");
   if (!$("chatLog").dataset.ready) {
-    addBubble("jarvis", "¡Hola! Soy Jarvis. Pregúntame de la nevera, de recetas o de lo que se te ocurra. Aquí ando.");
+    addBubble("jarvis", "¡Hola! Soy Jarvis, de la nevera de la casa. Pregúntenme recetas, qué hay o lo que se ofrezca.");
     $("chatLog").dataset.ready = "1";
   }
   $("chatInput").focus();
@@ -730,10 +730,57 @@ function closeChat() {
   document.body.classList.remove("chat-open");
 }
 
+function formatChatHtml(text) {
+  const cleaned = String(text || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\*[ \t]+\*\*/g, "\n- **")
+    .replace(/([^\n])(\d+)\.\s+\*\*/g, "$1\n$2. **")
+    .trim();
+  const escaped = escapeHtml(cleaned).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const lines = escaped.split("\n");
+  const out = [];
+  let list = "";
+  const closeList = () => {
+    if (!list) return;
+    out.push(list === "ul" ? "</ul>" : "</ol>");
+    list = "";
+  };
+  for (const line of lines) {
+    const ul = line.match(/^\s*(?:[-•]|\*)\s+(.+)/);
+    const ol = line.match(/^\s*\d+\.\s+(.+)/);
+    if (ul) {
+      if (list !== "ul") {
+        closeList();
+        out.push("<ul>");
+        list = "ul";
+      }
+      out.push(`<li>${ul[1]}</li>`);
+    } else if (ol) {
+      if (list !== "ol") {
+        closeList();
+        out.push("<ol>");
+        list = "ol";
+      }
+      out.push(`<li>${ol[1]}</li>`);
+    } else if (!line.trim()) {
+      closeList();
+    } else {
+      closeList();
+      out.push(`<p>${line}</p>`);
+    }
+  }
+  closeList();
+  return out.join("") || "<p></p>";
+}
+
 function addBubble(who, text) {
   const el = document.createElement("div");
   el.className = `bubble ${who}`;
-  el.textContent = text;
+  if (who.includes("jarvis") && !who.includes("busy")) {
+    el.innerHTML = formatChatHtml(text);
+  } else {
+    el.textContent = text;
+  }
   $("chatLog").appendChild(el);
   $("chatLog").scrollTop = $("chatLog").scrollHeight;
   return el;
@@ -805,7 +852,8 @@ async function onChatSubmit(event) {
     const data = await res.json();
     const reply = data.reply || "Ahora mismo no pude responder. Intenta de nuevo.";
     wait.classList.remove("busy");
-    wait.textContent = reply;
+    if (reply) wait.innerHTML = formatChatHtml(reply);
+    else wait.textContent = "Ahora mismo no pude responder. Intenta de nuevo.";
     chatHistory.push({ role: "jarvis", content: reply });
     addRecipeCards(data.recipes);
   } catch {

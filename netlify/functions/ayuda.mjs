@@ -145,7 +145,7 @@ async function chatOpenAI({ url, key, model, messages, extraHeaders = {} }) {
     body: JSON.stringify({
       model,
       temperature: 0.7,
-      max_tokens: 900,
+      max_tokens: 1600,
       messages,
     }),
   });
@@ -185,7 +185,7 @@ async function chatGemini({ base, key, messages }) {
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: system }] },
     contents,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 900 },
+    generationConfig: { temperature: 0.6, maxOutputTokens: 1800 },
   });
   let last = "sin modelo";
   for (const model of models) {
@@ -299,13 +299,22 @@ function localFridge(question, items) {
 }
 
 function systemPrompt(items) {
-  return `Eres Jarvis, el asistente de la casa de Mario. Español mexicano, cálido, claro, sin relleno de robot.
+  return `Eres Jarvis, el asistente de la nevera de esta casa. Español mexicano, cálido, claro.
+Hablas con toda la familia. NUNCA uses nombres propios (ni Mario ni ningún otro) salvo que la persona se presente en el mensaje.
+Di "en casa", "ustedes", "la nevera". No saludes como si hablaras con una sola persona.
 
-Puedes responder DE TODO lo que te pregunten: nevera, recetas, compras, matemáticas, cultura, organización, bromas, ideas, lo cotidiano. No eres un menú de botones: conversas de verdad.
+Formato OBLIGATORIO. El chat sí respeta saltos de línea y listas:
+- Párrafos cortos, cada uno en su línea.
+- Títulos en **negrita**, solos en una línea.
+- Listas con un ítem por línea, empezando con "- ".
+- Pasos con "1. " "2. " cada uno en su línea.
+Nunca escribas una receta en un solo párrafo. Nunca uses asteriscos sueltos en medio del renglón como si fueran viñetas.
+
+Puedes responder de todo: nevera, recetas, compras, matemáticas, cultura, organización, bromas, lo cotidiano.
 
 Tienes el inventario actual. NUNCA inventes que un producto está en la nevera si no aparece. Si caducó, avisa y no lo uses para cocinar. Si no hay, dilo y ofrece anotarlo en compras.
 
-Si sugieres recetas, di qué ya hay y qué faltaría. Máximo 3 recetas concretas. Cuando propongas recetas, al final (no lo leas en voz alta) agrega exactamente este bloque:
+Si sugieres recetas, di qué ya hay y qué faltaría. Máximo 3 recetas concretas y recetas COMPLETAS, sin cortar a media frase. Cuando propongas recetas, al final (no lo leas en voz alta) agrega exactamente este bloque:
 
 <!--RECIPES
 [{"id":"slug","name":"Nombre","time":"15 min","how":"pasos cortos","have":["lo que sí hay"],"missing":["lo que falta"]}]
