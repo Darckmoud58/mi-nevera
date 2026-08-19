@@ -310,6 +310,25 @@ ${JSON.stringify(items).slice(0, 7000)}`;
 
 export default async (req) => {
   if (req.method === "OPTIONS") return new Response("", { headers: cors });
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        ia: Boolean(
+          process.env.NETLIFY_AI_GATEWAY_KEY ||
+            process.env.OPENAI_API_KEY ||
+            process.env.GROQ_API_KEY ||
+            process.env.GEMINI_API_KEY ||
+            process.env.OPENROUTER_API_KEY
+        ),
+        gateway: Boolean(process.env.NETLIFY_AI_GATEWAY_KEY && process.env.NETLIFY_AI_GATEWAY_BASE_URL),
+        openai: Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_BASE_URL),
+        groq: Boolean(process.env.GROQ_API_KEY),
+        gemini: Boolean(process.env.GEMINI_API_KEY),
+      }),
+      { headers: cors }
+    );
+  }
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Método no permitido" }), { status: 405, headers: cors });
   }
