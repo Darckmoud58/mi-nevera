@@ -528,41 +528,49 @@ async function onListClick(event) {
   await save();
 }
 
+async function putOnShopList(name, { quiet = false } = {}) {
+  const label = String(name || "").trim();
+  if (!label) return false;
+  const existing = state.items.find((i) => i.name.toLowerCase() === label.toLowerCase());
+  if (existing) {
+    if (needsBuy(existing)) return false;
+    existing.wanted = true;
+    existing.updatedAt = new Date().toISOString();
+    return true;
+  }
+  const category = guessCategory(label);
+  const tracking = guessTracking(label, category);
+  state.items.unshift({
+    id: uid(),
+    name: label,
+    category,
+    location: "Estante medio",
+    tracking,
+    qty: 0,
+    unit: tracking === "hay" ? "hay" : "pzas",
+    minQty: 1,
+    expiry: "",
+    notes: "",
+    wanted: true,
+    source: "shop",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  if (!quiet) toast(`${label} se agregó a la lista`);
+  return true;
+}
+
 async function addToShop(event) {
   event.preventDefault();
   const name = $("shopAddName").value.trim();
   if (!name) return;
   const existing = state.items.find((i) => i.name.toLowerCase() === name.toLowerCase());
-  if (existing) {
-    if (needsBuy(existing)) {
-      toast(`${existing.name} ya está en la lista`);
-    } else {
-      existing.wanted = true;
-      existing.updatedAt = new Date().toISOString();
-      toast(`${existing.name} se agregó a compras`);
-      await save();
-    }
+  if (existing && needsBuy(existing)) {
+    toast(`${existing.name} ya está en la lista`);
   } else {
-    const category = guessCategory(name);
-    const tracking = guessTracking(name, category);
-    state.items.unshift({
-      id: uid(),
-      name,
-      category,
-      location: "Estante medio",
-      tracking,
-      qty: 0,
-      unit: tracking === "hay" ? "hay" : "pzas",
-      minQty: 1,
-      expiry: "",
-      notes: "",
-      wanted: true,
-      source: "shop",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-    toast(`${name} se agregó a la lista`);
+    await putOnShopList(name);
     await save();
+    if (existing) toast(`${existing.name} se agregó a compras`);
   }
   $("shopAddName").value = "";
   $("shopAddName").focus();
@@ -678,7 +686,7 @@ function bind() {
   bindChat();
 }
 
-const CHAT_CHIPS = ["¿Qué puedo cocinar hoy?", "¿Qué ya caducó?", "¿Qué falta en el súper?", "¿Hay leche?"];
+const CHAT_CHIPS = ["Recetas fáciles aunque falte algo", "¿Qué ya caducó?", "¿Qué hay en la nevera?", "¿Hay leche?"];
 const chatHistory = [];
 
 function bindChat() {
@@ -697,7 +705,7 @@ function bindChat() {
 function openChat() {
   $("chatPanel").hidden = false;
   if (!$("chatLog").dataset.ready) {
-    addBubble("jarvis", "Hola. Soy Jarvis. Pregúntame qué hay, qué caduca, qué falta o qué puedes cocinar con esta nevera.");
+    addBubble("jarvis", "Hola. Soy Jarvis. Pídeme recetas aunque falte algo: te pregunto si las haces y anoto los ingredientes en compras.");
     $("chatLog").dataset.ready = "1";
   }
   $("chatInput").focus();
@@ -716,6 +724,50 @@ function addBubble(who, text) {
   return el;
 }
 
+function addRecipeCards(recipes) {
+  if (!Array.isArray(recipes) || !recipes.length) return;
+  const wrap = document.createElement("div");
+  wrap.className = "recipe-stack";
+  wrap.innerHTML = recipes
+    .map((recipe) => {
+      const missing = recipe.missing || [];
+      const have = recipe.have || [];
+      const btn = missing.length
+        ? `<button type="button" class="tiny buy" data-add-missing="${escapeHtml(missing.join("|"))}" data-recipe="${escapeHtml(recipe.name)}">Sí, hacerla · agregar ${missing.length} a compras</button>`
+        : `<button type="button" class="tiny buy" data-add-missing="" data-recipe="${escapeHtml(recipe.name)}">Sí, la hago · ya tienes todo</button>`;
+      return `<article class="recipe-card">
+        <h3>${escapeHtml(recipe.name)}</h3>
+        <p class="recipe-meta">${escapeHtml(recipe.time || "fácil")} · ${escapeHtml(recipe.how || "")}</p>
+        ${have.length ? `<p>Ya hay: ${escapeHtml(have.join(", "))}</p>` : `<p>Hoy no tienes estos ingredientes.</p>`}
+        ${missing.length ? `<p>Faltaría: <strong>${escapeHtml(missing.join(", "))}</strong></p>` : `<p>No falta nada.</p>`}
+        ${btn}
+      </article>`;
+    })
+    .join("");
+  $("chatLog").appendChild(wrap);
+  wrap.querySelectorAll("[data-add-missing]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const missing = (btn.dataset.addMissing || "").split("|").filter(Boolean);
+      const recipe = btn.dataset.recipe || "la receta";
+      if (!missing.length) {
+        toast(`Perfecto: ${recipe} sale con lo de hoy`);
+        addBubble("jarvis", `Órale. ${recipe} sale con lo que ya hay. Cuando la hagas, tacha lo que se acabe.`);
+        return;
+      }
+      let added = 0;
+      for (const name of missing) {
+        if (await putOnShopList(name, { quiet: true })) added += 1;
+      }
+      await save();
+      toast(added ? `${added} ingrediente(s) a compras` : "Ya estaban en la lista");
+      addBubble("jarvis", `Listo: para ${recipe} anoté ${missing.join(", ")} en Compras. ¿Las traemos del súper?`);
+      btn.disabled = true;
+      btn.textContent = "Anotado en compras";
+    });
+  });
+  $("chatLog").scrollTop = $("chatLog").scrollHeight;
+}
+
 async function onChatSubmit(event) {
   event.preventDefault();
   const question = $("chatInput").value.trim();
@@ -723,7 +775,7 @@ async function onChatSubmit(event) {
   $("chatInput").value = "";
   addBubble("me", question);
   chatHistory.push({ role: "user", content: question });
-  const wait = addBubble("jarvis busy", "Estoy viendo la nevera…");
+  const wait = addBubble("jarvis busy", "Estoy armando ideas…");
   $("chatSend").disabled = true;
   try {
     const res = await fetch("/api/ayuda", {
@@ -740,6 +792,7 @@ async function onChatSubmit(event) {
     wait.classList.remove("busy");
     wait.textContent = reply;
     chatHistory.push({ role: "jarvis", content: reply });
+    addRecipeCards(data.recipes);
   } catch {
     wait.classList.remove("busy");
     wait.textContent = "Se me fue la señal. Revisa la red y pregúntame otra vez.";

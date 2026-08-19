@@ -840,6 +840,40 @@ h1 {
   font: inherit;
 }
 
+.recipe-stack {
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.recipe-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.recipe-card h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.recipe-card p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.recipe-meta {
+  color: var(--sage) !important;
+  font-weight: 600;
+}
+
+.recipe-card .tiny {
+  margin-top: 8px;
+  width: 100%;
+}
+
 @media print {
   body {
     background: #fff;

@@ -5,6 +5,107 @@ const cors = {
   "Content-Type": "application/json; charset=utf-8",
 };
 
+const RECIPES = [
+  {
+    id: "huevos-mexicana",
+    name: "Huevos a la mexicana",
+    time: "15 min",
+    need: ["huevo", "jitomate", "cebolla"],
+    how: "Sofríe jitomate y cebolla, tira los huevos. Desayuno de diario.",
+  },
+  {
+    id: "quesadillas",
+    name: "Quesadillas",
+    time: "10 min",
+    need: ["tortillas", "queso"],
+    how: "Queso al comal. Si hay pollo o champiñón, súmale.",
+  },
+  {
+    id: "enchiladas",
+    name: "Enchiladas simples",
+    time: "25 min",
+    need: ["tortillas", "salsa", "crema", "queso"],
+    how: "Tortilla, salsa, un toque de crema y queso. Rinden para varios.",
+  },
+  {
+    id: "pasta-ajo",
+    name: "Pasta al ajo",
+    time: "20 min",
+    need: ["pasta", "ajo", "aceite"],
+    how: "Agua, pasta, ajo en aceite. Si hay queso o crema, al final.",
+  },
+  {
+    id: "arroz-mexicana",
+    name: "Arroz a la mexicana",
+    time: "30 min",
+    need: ["arroz", "jitomate", "cebolla", "ajo"],
+    how: "Sofríe el arroz, jitomate licuado, agua y a dormir el fuego.",
+  },
+  {
+    id: "sopa-tortilla",
+    name: "Sopa de tortilla",
+    time: "25 min",
+    need: ["tortillas", "jitomate", "crema"],
+    how: "Caldo de jitomate, tiritas de tortilla y crema al servir.",
+  },
+  {
+    id: "licuado",
+    name: "Licuado rápido",
+    time: "5 min",
+    need: ["leche", "plátano"],
+    how: "Leche, plátano, un hielo si hay. Merienda sin sartén.",
+  },
+  {
+    id: "atole",
+    name: "Atole o café con leche",
+    time: "10 min",
+    need: ["leche"],
+    how: "Leche caliente. Si hay canela o chocolate, queda de casa.",
+  },
+  {
+    id: "sandwich",
+    name: "Sándwich de la casa",
+    time: "8 min",
+    need: ["pan", "queso"],
+    how: "Pan, queso, lo que haya: jamón, jitomate o un huevo.",
+  },
+  {
+    id: "huevos-estrellados",
+    name: "Huevos estrellados",
+    time: "10 min",
+    need: ["huevo", "aceite"],
+    how: "Sartén, huevo, sal. Con tortillas o pan, ya es desayuno.",
+  },
+  {
+    id: "ensalada",
+    name: "Ensalada rápida",
+    time: "10 min",
+    need: ["lechuga", "jitomate"],
+    how: "Pica, sal, limón o aceite. Proteína extra si hay huevo o pollo.",
+  },
+  {
+    id: "pollo-comal",
+    name: "Pollo al comal con salsa",
+    time: "30 min",
+    need: ["pollo", "jitomate", "cebolla"],
+    how: "Pollo, salsa improvisada de jitomate y cebolla. Arroz si hay.",
+  },
+  {
+    id: "frijoles-queso",
+    name: "Frijoles con queso",
+    time: "15 min",
+    need: ["frijoles", "queso"],
+    how: "Calienta frijoles, queso encima. Con tortillas es comida completa.",
+  },
+  {
+    id: "hotcakes",
+    name: "Hotcakes simples",
+    time: "20 min",
+    need: ["huevo", "leche", "harina"],
+    how: "Huevo, leche, harina, sartén. Si no hay harina, se anota en compras.",
+  },
+];
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -48,103 +149,138 @@ function names(list) {
   return list.map((i) => i.nombre).join(", ");
 }
 
-function hasName(items, rx) {
-  return items.filter((i) => i.hay && i.estado !== "caduco" && rx.test(fold(i.nombre) + " " + fold(i.categoria)));
+function usable(items) {
+  return items.filter((i) => i.hay && i.estado !== "caduco");
 }
 
-function localAnswer(question, items) {
+function matchNeed(items, need) {
+  const n = fold(need);
+  return usable(items).find((i) => {
+    const name = fold(i.nombre);
+    return name.includes(n) || n.includes(name.split(" ")[0]) || fold(i.categoria).includes(n);
+  });
+}
+
+function scoreRecipes(items) {
+  return RECIPES.map((recipe) => {
+    const have = [];
+    const missing = [];
+    for (const need of recipe.need) {
+      const hit = matchNeed(items, need);
+      if (hit) have.push(hit.nombre);
+      else missing.push(need.charAt(0).toUpperCase() + need.slice(1));
+    }
+    return { ...recipe, have, missing, missingCount: missing.length };
+  }).sort((a, b) => a.missingCount - b.missingCount || a.need.length - b.need.length);
+}
+
+function wantsRecipes(q) {
+  return /receta|cocin|facil|almorz|cenar|desayun|prepar|enchilada|comida|que como|platillo|menu|cocinar|hacer de comer/.test(q);
+}
+
+function recipeHelp(items, q) {
+  const ranked = scoreRecipes(items);
+  const buyMode = /compr|falt|super|ingrediente/.test(q);
+  const pick = buyMode ? ranked.filter((r) => r.missingCount > 0).slice(0, 3) : ranked.slice(0, 3);
+  const recipes = (pick.length ? pick : ranked.slice(0, 3)).map((r) => ({
+    id: r.id,
+    name: r.name,
+    time: r.time,
+    how: r.how,
+    have: r.have,
+    missing: r.missing,
+  }));
+  const reply = buyMode
+    ? "Te dejo recetas fáciles. Aunque no tengas todo, dime si quieres hacer alguna y anoto lo que falte en compras."
+    : "Con lo de hoy, o comprando poquito, estas tres salen sin complicarse. Elige una y te agrego lo que falte.";
+  return { reply, recipes };
+}
+
+function localHelp(question, items) {
   const q = fold(question);
-  const hay = items.filter((i) => i.hay && i.estado !== "caduco");
+  const hay = usable(items);
   const caducos = items.filter((i) => i.estado === "caduco");
   const pronto = items.filter((i) => i.estado === "por caducar");
   const falta = items.filter((i) => !i.hay || i.estado === "caduco");
 
-  if (/hola|buenas|quien eres|quién eres/.test(q) || q.length < 3) {
-    return "Soy Jarvis, de la nevera de casa. Pregúntame qué hay, qué caduca, qué falta o qué puedes cocinar con lo de hoy.";
+  if (wantsRecipes(q)) return recipeHelp(items, q);
+
+  if (/hola|buenas|quien eres/.test(q) && q.length < 24) {
+    return {
+      reply: "Soy Jarvis. Pregúntame lo que sea de la cocina: recetas aunque falte algo, caducidad o el súper.",
+      recipes: [],
+    };
   }
 
-  if (/caduc|tirar|vence|pasad|echaron|echar a perder/.test(q)) {
+  if (/caduc|tirar|vence|pasad|echar a perder/.test(q) && !wantsRecipes(q)) {
     if (!caducos.length && !pronto.length) {
-      return "Hoy no veo nada caducado. Si algo huele raro igual no lo uses: la fecha ayuda, la nariz manda.";
+      return { reply: "Hoy no veo nada caducado. Si algo huele raro, igual no lo uses.", recipes: [] };
     }
     const parts = [];
-    if (caducos.length) parts.push(`Ya no conviene: ${names(caducos)}. Mejor al bote y a la lista.`);
+    if (caducos.length) parts.push(`Ya no conviene: ${names(caducos)}.`);
     if (pronto.length) parts.push(`Úsalo pronto: ${names(pronto)}.`);
-    return parts.join(" ");
+    return { reply: parts.join(" "), recipes: [] };
   }
 
-  if (/compr|super|súper|falta|reponer|lista/.test(q)) {
-    if (!falta.length) return "La lista está tranquila: no veo huecos urgentes. Si se te antoja algo, agrégalo en Compras.";
-    return `Para el súper: ${names(falta.slice(0, 12))}. Táchalo cuando lo traigas.`;
+  if (/compr|super|falta|reponer|lista/.test(q)) {
+    if (!falta.length) {
+      return {
+        reply: "La lista está tranquila. Si quieres, te sugiero recetas fáciles y anotamos lo que falte.",
+        recipes: scoreRecipes(items).slice(0, 2).map((r) => ({
+          id: r.id,
+          name: r.name,
+          time: r.time,
+          how: r.how,
+          have: r.have,
+          missing: r.missing,
+        })),
+      };
+    }
+    return { reply: `Ahora mismo en compras veo: ${names(falta.slice(0, 12))}. ¿Te armo recetas fáciles con lo que falte?`, recipes: [] };
   }
 
-  if (/donde esta|dónde está|en que estante|ubicacion|ubicación/.test(q)) {
-    const hit = items.find((i) => q.includes(fold(i.nombre).split(" ")[0]) && i.nombre);
+  if (/donde esta|en que estante|ubicacion/.test(q)) {
     const named = items.filter((i) => fold(i.nombre).split(/\s+/).some((w) => w.length > 3 && q.includes(w)));
-    const pick = named[0] || hit;
-    if (!pick) return hay.length ? `Lo que hay está anotado así: ${hay.map((i) => `${i.nombre} (${i.ubicacion})`).join("; ")}.` : "La nevera está vacía en el registro.";
-    return pick.hay
-      ? `${pick.nombre} está en ${pick.ubicacion || "la nevera"}.`
-      : `De ${pick.nombre} no hay ahora. Está en la lista de compras.`;
+    const pick = named[0];
+    if (!pick) {
+      return { reply: hay.length ? `Lo anotado: ${hay.map((i) => `${i.nombre} (${i.ubicacion})`).join("; ")}.` : "No hay registro de ubicación todavía.", recipes: [] };
+    }
+    return {
+      reply: pick.hay ? `${pick.nombre} está en ${pick.ubicacion || "la nevera"}.` : `De ${pick.nombre} no hay. ¿Lo agrego a compras?`,
+      recipes: [],
+    };
   }
 
-  if (/hay |tenemos |queda |tienes /.test(q) || /leche|crema|huevo|jitomate|queso|pollo/.test(q) && /hay|tenemos|queda/.test(q)) {
+  if (/hay |tenemos |queda |tienes /.test(q)) {
     const words = q.split(/\s+/).filter((w) => w.length > 3 && !["tenemos", "queda", "hay", "jarvis", "nevera"].includes(w));
     const hits = items.filter((i) => words.some((w) => fold(i.nombre).includes(w)));
     if (hits.length) {
-      return hits
-        .map((i) => {
-          if (i.estado === "caduco") return `${i.nombre}: mejor no. Ya caducó.`;
-          if (!i.hay) return `${i.nombre}: no hay.`;
-          if (i.estado === "por caducar") return `${i.nombre}: sí hay, úsalo pronto.`;
-          return `${i.nombre}: sí hay, en ${i.ubicacion || "la nevera"}.`;
-        })
-        .join(" ");
+      return {
+        reply: hits
+          .map((i) => {
+            if (i.estado === "caduco") return `${i.nombre}: mejor no, ya caducó.`;
+            if (!i.hay) return `${i.nombre}: no hay. Si quieres, lo anoto en compras.`;
+            return `${i.nombre}: sí hay, en ${i.ubicacion || "la nevera"}.`;
+          })
+          .join(" "),
+        recipes: [],
+      };
     }
   }
 
-  if (/cocin|receta|comer|almorz|cenar|desayun|prepar|hacer de comer|que como|qué como|menu|menú/.test(q)) {
-    const ideas = [];
-    const crema = hasName(hay, /crema/);
-    const leche = hasName(hay, /leche/);
-    const huevo = hasName(hay, /huevo/);
-    const tortilla = hasName(hay, /tortilla/);
-    const queso = hasName(hay, /queso/);
-    const jitomate = hasName(hay, /jitomate|tomate/);
-    const pollo = hasName(hay, /pollo/);
-    const yogurt = hasName(hay, /yogurt|yogur/);
-    const fruta = hay.filter((i) => /fruta|platano|plátano|manzana|naranja/.test(fold(i.nombre + i.categoria)));
-    if (crema.length && (jitomate.length || /enchilada/.test(q))) {
-      ideas.push("Enchiladas con un toque de crema. Rinden para varios y aprovechas lo que ya está.");
-    }
-    if (queso.length && tortilla.length) ideas.push("Quesadillas. Si hay pollo o verdura, súmale y queda lonche completo.");
-    if (huevo.length) ideas.push("Huevos al gusto: estrellados, a la mexicana si hay jitomate y cebolla, o revueltos.");
-    if (leche.length || yogurt.length) {
-      ideas.push(fruta.length ? `Licuado con ${fruta[0].nombre} y lácteo. Merienda fácil.` : "Café con leche o atole, si la leche está bien.");
-    }
-    if (pollo.length) ideas.push("Quesadillas o caldito con el pollo. Las sobras no tienen que sentirse repetición.");
-    if (jitomate.length) ideas.push("Salsa o recaudo con el jitomate más blandito primero.");
-    if (!ideas.length && hay.length) {
-      ideas.push(`Con lo de hoy (${names(hay.slice(0, 8))}) arma un plato simple: lo que caduca primero, al sartén primero.`);
-    }
-    if (!hay.length) return "El registro está vacío. Anota lo que hay y te armo ideas de comida.";
-    if (caducos.length) ideas.push(`Ojo: no uses ${names(caducos)}.`);
-    return ideas.slice(0, 4).join(" ");
+  if (/nutri|calor|prote|salud|vitamina|dieta/.test(q)) {
+    return {
+      reply: "Sin receta de doctor: proteína (huevo, yogurt, pollo), color en el plato y agua. ¿Te sugiero un platillo fácil?",
+      recipes: [],
+    };
   }
 
-  if (/nutri|calor|prote|salud|vitamina|dieta|engorda/.test(q)) {
-    return "Sin recetas de doctor: proteína (huevo, yogurt, pollo), color en el plato (verdura o fruta) y agua al abrir la nevera. Lo casero gana a comprar fuera todos los días.";
+  if (/que hay|inventario|que tenemos/.test(q)) {
+    if (!hay.length) return { reply: "En el registro no hay productos vigentes. Igual te puedo sugerir recetas y anotar ingredientes.", recipes: recipeHelp(items, "recetas").recipes };
+    return { reply: `Hay: ${names(hay)}.${pronto.length ? ` Úsalo pronto: ${names(pronto)}.` : ""}`, recipes: [] };
   }
 
-  if (/que hay|qué hay|inventario|que tenemos|qué tenemos|que hay de/.test(q)) {
-    if (!hay.length) return "En el registro no hay productos vigentes. Si la nevera sí tiene cosas, pulsa Registrar.";
-    return `Hay: ${names(hay)}.${pronto.length ? ` Úsalo pronto: ${names(pronto)}.` : ""}`;
-  }
-
-  if (hay.length) {
-    return `Puedo ayudarte con esta nevera. Hoy hay ${names(hay.slice(0, 10))}. Pregúntame qué cocinar, qué caduca o qué falta en el súper.`;
-  }
-  return "Aún no veo productos vigentes. Registra lo de la nevera y pregúntame de nuevo: qué cocinar, qué caduca o qué comprar.";
+  return recipeHelp(items, q);
 }
 
 async function askModel(system, messages) {
@@ -164,8 +300,8 @@ async function askModel(system, messages) {
     },
     body: JSON.stringify({
       model,
-      temperature: 0.4,
-      max_tokens: 320,
+      temperature: 0.5,
+      max_tokens: 420,
       messages: [{ role: "system", content: system }, ...messages],
     }),
   });
@@ -188,18 +324,19 @@ export default async (req) => {
     }
     const items = snapshot(body.items);
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
-    const local = localAnswer(question, items);
-    const system = `Eres Jarvis, asistente de la nevera de casa. Español mexicano, breve, cálido y práctico.
-No inventes productos que no estén en el inventario. Si caducó, dilo con calma.
-Recetas simples de casa. No des consejos médicos.
-Inventario de hoy:\n${JSON.stringify(items, null, 0).slice(0, 6000)}`;
+    const local = localHelp(question, items);
+    const system = `Eres Jarvis, asistente de cocina de casa. Español mexicano, breve, cálido.
+Puedes sugerir recetas fáciles AUNQUE falten ingredientes. Di qué ya hay, qué faltaría y pregunta si los agrego a la lista de compras.
+No inventes que un producto está en la nevera si no aparece en el inventario. Si caducó, no lo uses.
+No des consejos médicos.
+Inventario:\n${JSON.stringify(items, null, 0).slice(0, 6000)}`;
     const messages = [
       ...history
         .filter((m) => m && m.role && m.content)
         .map((m) => ({ role: m.role === "jarvis" ? "assistant" : "user", content: String(m.content).slice(0, 500) })),
       { role: "user", content: question },
     ];
-    let reply = local;
+    let reply = local.reply;
     let source = "casa";
     try {
       const ai = await askModel(system, messages);
@@ -208,9 +345,10 @@ Inventario de hoy:\n${JSON.stringify(items, null, 0).slice(0, 6000)}`;
         source = "ia";
       }
     } catch {
-      /* usa respuesta de casa */
+      /* casa */
     }
-    return new Response(JSON.stringify({ reply, source }), { headers: cors });
+    const recipes = wantsRecipes(fold(question)) || local.recipes?.length ? local.recipes : [];
+    return new Response(JSON.stringify({ reply, source, recipes }), { headers: cors });
   } catch (error) {
     return new Response(JSON.stringify({ error: "No pude responder", detail: String(error) }), {
       status: 500,
