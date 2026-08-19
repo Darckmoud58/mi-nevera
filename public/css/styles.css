@@ -808,13 +808,15 @@ body.chat-open .fab {
 .gate {
   position: fixed;
   inset: 0;
-  z-index: 50;
-  display: grid;
+  z-index: 80;
+  display: none;
   place-items: center;
   padding: 24px 16px;
-  background:
-    radial-gradient(900px 380px at 90% -40px, #ffd27a 0%, transparent 58%),
-    var(--paper);
+  background: #ffe7cc;
+}
+
+.gate.is-open {
+  display: grid;
 }
 
 .gate[hidden] {

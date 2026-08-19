@@ -643,8 +643,12 @@ async function onSignOut() {
 
 function showGate(id, on) {
   const el = $(id);
-  if (el) el.hidden = !on;
-  document.body.classList.toggle("gated", Boolean(!$("authGate").hidden || !$("houseGate").hidden));
+  if (el) {
+    el.hidden = !on;
+    el.classList.toggle("is-open", on);
+  }
+  const blocked = Boolean($("authGate")?.classList.contains("is-open") || $("houseGate")?.classList.contains("is-open"));
+  document.body.classList.toggle("gated", blocked);
 }
 
 async function bootCloud() {
@@ -1167,12 +1171,17 @@ async function init() {
     state.ideaIndex = 0;
   }
   bind();
+  render();
   if (hasCloud()) showGate("authGate", true);
-  await bootCloud();
   const hash = location.hash.replace("#", "");
-  if (!document.body.classList.contains("gated")) {
+  if (!hasCloud()) {
     setView(["inventario", "compras", "registrar", "qr", "hogar"].includes(hash) ? hash : "inventario");
   }
+  bootCloud().then(() => {
+    if (!document.body.classList.contains("gated")) {
+      setView(["inventario", "compras", "registrar", "qr", "hogar"].includes(hash) ? hash : "inventario");
+    }
+  });
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").then((reg) => reg.update()).catch(() => {});
   }

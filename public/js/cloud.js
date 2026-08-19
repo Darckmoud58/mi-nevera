@@ -1,5 +1,13 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./config.js";
+
+let createClient = null;
+
+async function loadSdk() {
+  if (createClient) return;
+  const mod = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm");
+  createClient = mod.createClient;
+  if (!createClient) throw new Error("No se pudo cargar el acceso");
+}
 
 const KEYS = "mi-nevera-supabase";
 const HOUSE_KEY = "mi-nevera-hogar";
@@ -13,6 +21,10 @@ let role = "";
 
 export function hasCloud() {
   return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+}
+
+export function isConfigured() {
+  return Boolean(config.url && config.anonKey);
 }
 
 export function getSession() {
@@ -74,6 +86,7 @@ export async function saveConfig({ url, anonKey }) {
   if (!next.url || !next.anonKey) throw new Error("Faltan la URL o la clave");
   saveLocalConfig(next);
   config = next;
+  await loadSdk();
   client = createClient(config.url, config.anonKey, {
     auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true },
   });
@@ -89,6 +102,7 @@ export async function initCloud() {
     session = null;
     return { configured: false, session: null };
   }
+  await loadSdk();
   if (!client) {
     client = createClient(config.url, config.anonKey, {
       auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true },
