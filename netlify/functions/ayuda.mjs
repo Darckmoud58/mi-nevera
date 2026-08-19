@@ -174,7 +174,7 @@ async function tryOpenAIModels(url, key, messages, extraHeaders) {
 
 async function chatGemini({ base, key, messages }) {
   const preferred = process.env.AI_MODEL;
-  const models = [...new Set([preferred, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"].filter(Boolean))];
+  const models = [...new Set([preferred, "gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest"].filter(Boolean))];
   const system = messages.find((m) => m.role === "system")?.content || "";
   const contents = messages
     .filter((m) => m.role !== "system")
@@ -182,33 +182,90 @@ async function chatGemini({ base, key, messages }) {
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
-  const body = JSON.stringify({
-    systemInstruction: { parts: [{ text: system }] },
-    contents,
-    generationConfig: { temperature: 0.6, maxOutputTokens: 1800 },
-  });
   let last = "sin modelo";
   for (const model of models) {
-    const url = `${String(base).replace(/\/$/, "")}/v1beta/models/${model}:generateContent`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": key,
-      },
-      body,
-    });
-    const raw = await res.text();
-    if (!res.ok) {
-      last = `${res.status} ${raw.slice(0, 180)}`;
-      continue;
+    try {
+      const text = await geminiComplete({ base, key, model, system, contents });
+      if (text) return text;
+      last = "sin texto";
+    } catch (error) {
+      last = String(error.message || error);
     }
-    const data = JSON.parse(raw);
-    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("").trim();
-    if (text) return text;
-    last = "sin texto";
   }
   throw new Error(last);
+}
+
+function geminiText(data) {
+  const candidate = data?.candidates?.[0] || {};
+  const parts = candidate.content?.parts || [];
+  const text = parts
+    .filter((part) => part && part.text && !part.thought)
+    .map((part) => part.text)
+    .join("")
+    .trim();
+  return { text, finishReason: candidate.finishReason || "" };
+}
+
+function looksCut(text, finishReason) {
+  if (finishReason === "MAX_TOKENS") return true;
+  const t = String(text || "").trim();
+  if (!t) return true;
+  if (/\*\*$/.test(t) || /[:(\-–,]$/.test(t)) return true;
+  if ((t.match(/\*\*/g) || []).length % 2 === 1) return true;
+  if (t.length < 220 && /receta|espagueti|boloñesa|ingrediente|prepara/i.test(t)) return true;
+  return false;
+}
+
+async function geminiOnce({ base, key, model, system, contents }) {
+  const generationConfig = {
+    temperature: 0.5,
+    maxOutputTokens: 4096,
+  };
+  if (/2\.5|2-5/.test(model)) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+  const res = await fetch(`${String(base).replace(/\/$/, "")}/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": key,
+    },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents,
+      generationConfig,
+    }),
+  });
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`${res.status} ${raw.slice(0, 220)}`);
+  return geminiText(JSON.parse(raw));
+}
+
+async function geminiComplete({ base, key, model, system, contents }) {
+  let { text, finishReason } = await geminiOnce({ base, key, model, system, contents });
+  if (text && looksCut(text, finishReason)) {
+    const cont = await geminiOnce({
+      base,
+      key,
+      model,
+      system,
+      contents: [
+        ...contents,
+        { role: "model", parts: [{ text }] },
+        {
+          role: "user",
+          parts: [
+            {
+              text: "Se cortó. Continúa exactamente donde te quedaste. Completa ingredientes y pasos. No repitas lo ya escrito. Termina la receta.",
+            },
+          ],
+        },
+      ],
+    });
+    if (cont.text) text = `${text.trim()}\n\n${cont.text.trim()}`;
+  }
+  if (!text) throw new Error("sin texto");
+  return text;
 }
 
 async function askModel(messages) {
@@ -309,12 +366,13 @@ Formato OBLIGATORIO. El chat sí respeta saltos de línea y listas:
 - Listas con un ítem por línea, empezando con "- ".
 - Pasos con "1. " "2. " cada uno en su línea.
 Nunca escribas una receta en un solo párrafo. Nunca uses asteriscos sueltos en medio del renglón como si fueran viñetas.
+Termina siempre la receta: ingredientes, pasos y un cierre. No te quedes a media frase ni a medias negritas.
 
 Puedes responder de todo: nevera, recetas, compras, matemáticas, cultura, organización, bromas, lo cotidiano.
 
 Tienes el inventario actual. NUNCA inventes que un producto está en la nevera si no aparece. Si caducó, avisa y no lo uses para cocinar. Si no hay, dilo y ofrece anotarlo en compras.
 
-Si sugieres recetas, di qué ya hay y qué faltaría. Máximo 3 recetas concretas y recetas COMPLETAS, sin cortar a media frase. Cuando propongas recetas, al final (no lo leas en voz alta) agrega exactamente este bloque:
+Si sugieres recetas, di qué ya hay y qué faltaría. Máximo 2 recetas concretas y COMPLETAS. Primero escribe toda la receta para la familia. Solo al final, si ya terminaste, puedes agregar este bloque:
 
 <!--RECIPES
 [{"id":"slug","name":"Nombre","time":"15 min","how":"pasos cortos","have":["lo que sí hay"],"missing":["lo que falta"]}]

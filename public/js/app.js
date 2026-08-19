@@ -735,6 +735,7 @@ function formatChatHtml(text) {
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+\*[ \t]+\*\*/g, "\n- **")
     .replace(/([^\n])(\d+)\.\s+\*\*/g, "$1\n$2. **")
+    .replace(/\*\*$/g, "")
     .trim();
   const escaped = escapeHtml(cleaned).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   const lines = escaped.split("\n");
