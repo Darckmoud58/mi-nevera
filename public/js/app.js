@@ -699,7 +699,7 @@ function bind() {
   bindChat();
 }
 
-const CHAT_CHIPS = ["Recetas fáciles aunque falte algo", "¿Qué ya caducó?", "¿Qué hay en la nevera?", "¿Hay leche?"];
+const CHAT_CHIPS = ["¿Qué puedo cocinar hoy?", "¿Qué ya caducó?", "Cuéntame un chiste", "¿Hay leche?"];
 const chatHistory = [];
 
 function bindChat() {
@@ -719,7 +719,7 @@ function openChat() {
   $("chatPanel").hidden = false;
   document.body.classList.add("chat-open");
   if (!$("chatLog").dataset.ready) {
-    addBubble("jarvis", "¡Hola! Soy Jarvis. Pídeme recetas aunque falte algo: si te late, anoto los ingredientes en compras.");
+    addBubble("jarvis", "¡Hola! Soy Jarvis. Pregúntame de la nevera, de recetas o de lo que se te ocurra. Aquí ando.");
     $("chatLog").dataset.ready = "1";
   }
   $("chatInput").focus();
@@ -790,7 +790,7 @@ async function onChatSubmit(event) {
   $("chatInput").value = "";
   addBubble("me", question);
   chatHistory.push({ role: "user", content: question });
-  const wait = addBubble("jarvis busy", "Estoy armando ideas…");
+  const wait = addBubble("jarvis busy", "Ya te leo…");
   $("chatSend").disabled = true;
   try {
     const res = await fetch("/api/ayuda", {
@@ -799,7 +799,7 @@ async function onChatSubmit(event) {
       body: JSON.stringify({
         question,
         items: state.items,
-        history: chatHistory.slice(-6),
+        history: chatHistory.slice(-12),
       }),
     });
     const data = await res.json();

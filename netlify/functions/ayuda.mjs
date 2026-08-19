@@ -6,104 +6,16 @@ const cors = {
 };
 
 const RECIPES = [
-  {
-    id: "huevos-mexicana",
-    name: "Huevos a la mexicana",
-    time: "15 min",
-    need: ["huevo", "jitomate", "cebolla"],
-    how: "Sofríe jitomate y cebolla, tira los huevos. Desayuno de diario.",
-  },
-  {
-    id: "quesadillas",
-    name: "Quesadillas",
-    time: "10 min",
-    need: ["tortillas", "queso"],
-    how: "Queso al comal. Si hay pollo o champiñón, súmale.",
-  },
-  {
-    id: "enchiladas",
-    name: "Enchiladas simples",
-    time: "25 min",
-    need: ["tortillas", "salsa", "crema", "queso"],
-    how: "Tortilla, salsa, un toque de crema y queso. Rinden para varios.",
-  },
-  {
-    id: "pasta-ajo",
-    name: "Pasta al ajo",
-    time: "20 min",
-    need: ["pasta", "ajo", "aceite"],
-    how: "Agua, pasta, ajo en aceite. Si hay queso o crema, al final.",
-  },
-  {
-    id: "arroz-mexicana",
-    name: "Arroz a la mexicana",
-    time: "30 min",
-    need: ["arroz", "jitomate", "cebolla", "ajo"],
-    how: "Sofríe el arroz, jitomate licuado, agua y a dormir el fuego.",
-  },
-  {
-    id: "sopa-tortilla",
-    name: "Sopa de tortilla",
-    time: "25 min",
-    need: ["tortillas", "jitomate", "crema"],
-    how: "Caldo de jitomate, tiritas de tortilla y crema al servir.",
-  },
-  {
-    id: "licuado",
-    name: "Licuado rápido",
-    time: "5 min",
-    need: ["leche", "plátano"],
-    how: "Leche, plátano, un hielo si hay. Merienda sin sartén.",
-  },
-  {
-    id: "atole",
-    name: "Atole o café con leche",
-    time: "10 min",
-    need: ["leche"],
-    how: "Leche caliente. Si hay canela o chocolate, queda de casa.",
-  },
-  {
-    id: "sandwich",
-    name: "Sándwich de la casa",
-    time: "8 min",
-    need: ["pan", "queso"],
-    how: "Pan, queso, lo que haya: jamón, jitomate o un huevo.",
-  },
-  {
-    id: "huevos-estrellados",
-    name: "Huevos estrellados",
-    time: "10 min",
-    need: ["huevo", "aceite"],
-    how: "Sartén, huevo, sal. Con tortillas o pan, ya es desayuno.",
-  },
-  {
-    id: "ensalada",
-    name: "Ensalada rápida",
-    time: "10 min",
-    need: ["lechuga", "jitomate"],
-    how: "Pica, sal, limón o aceite. Proteína extra si hay huevo o pollo.",
-  },
-  {
-    id: "pollo-comal",
-    name: "Pollo al comal con salsa",
-    time: "30 min",
-    need: ["pollo", "jitomate", "cebolla"],
-    how: "Pollo, salsa improvisada de jitomate y cebolla. Arroz si hay.",
-  },
-  {
-    id: "frijoles-queso",
-    name: "Frijoles con queso",
-    time: "15 min",
-    need: ["frijoles", "queso"],
-    how: "Calienta frijoles, queso encima. Con tortillas es comida completa.",
-  },
-  {
-    id: "hotcakes",
-    name: "Hotcakes simples",
-    time: "20 min",
-    need: ["huevo", "leche", "harina"],
-    how: "Huevo, leche, harina, sartén. Si no hay harina, se anota en compras.",
-  },
+  { id: "huevos-mexicana", name: "Huevos a la mexicana", time: "15 min", need: ["huevo", "jitomate", "cebolla"], how: "Sofríe jitomate y cebolla, tira los huevos." },
+  { id: "quesadillas", name: "Quesadillas", time: "10 min", need: ["tortillas", "queso"], how: "Queso al comal. Si hay pollo o champiñón, súmale." },
+  { id: "enchiladas", name: "Enchiladas simples", time: "25 min", need: ["tortillas", "salsa", "crema", "queso"], how: "Tortilla, salsa, un toque de crema y queso." },
+  { id: "pasta-ajo", name: "Pasta al ajo", time: "20 min", need: ["pasta", "ajo", "aceite"], how: "Agua, pasta, ajo en aceite. Queso o crema al final si hay." },
+  { id: "sopa-tortilla", name: "Sopa de tortilla", time: "25 min", need: ["tortillas", "jitomate", "crema"], how: "Caldo de jitomate, tiritas de tortilla y crema." },
+  { id: "licuado", name: "Licuado rápido", time: "5 min", need: ["leche", "plátano"], how: "Leche, plátano, un hielo si hay." },
+  { id: "sandwich", name: "Sándwich de la casa", time: "8 min", need: ["pan", "queso"], how: "Pan, queso y lo que haya: jamón, jitomate o un huevo." },
+  { id: "huevos-estrellados", name: "Huevos estrellados", time: "10 min", need: ["huevo", "aceite"], how: "Sartén, huevo, sal. Con tortillas o pan ya es desayuno." },
+  { id: "frijoles-queso", name: "Frijoles con queso", time: "15 min", need: ["frijoles", "queso"], how: "Calienta frijoles, queso encima, tortillas." },
+  { id: "hotcakes", name: "Hotcakes simples", time: "20 min", need: ["huevo", "leche", "harina"], how: "Huevo, leche, harina, sartén." },
 ];
 
 function todayISO() {
@@ -145,10 +57,6 @@ function snapshot(items) {
   });
 }
 
-function names(list) {
-  return list.map((i) => i.nombre).join(", ");
-}
-
 function usable(items) {
   return items.filter((i) => i.hay && i.estado !== "caduco");
 }
@@ -157,7 +65,7 @@ function matchNeed(items, need) {
   const n = fold(need);
   return usable(items).find((i) => {
     const name = fold(i.nombre);
-    return name.includes(n) || n.includes(name.split(" ")[0]) || fold(i.categoria).includes(n);
+    return name.includes(n) || n.includes(name.split(" ")[0]);
   });
 }
 
@@ -170,144 +78,234 @@ function scoreRecipes(items) {
       if (hit) have.push(hit.nombre);
       else missing.push(need.charAt(0).toUpperCase() + need.slice(1));
     }
-    return { ...recipe, have, missing, missingCount: missing.length };
+    return { id: recipe.id, name: recipe.name, time: recipe.time, how: recipe.how, have, missing, missingCount: missing.length, need: recipe.need };
   }).sort((a, b) => a.missingCount - b.missingCount || a.need.length - b.need.length);
 }
 
 function wantsRecipes(q) {
-  return /receta|cocin|facil|almorz|cenar|desayun|prepar|enchilada|comida|que como|platillo|menu|cocinar|hacer de comer/.test(q);
+  return /receta|cocin|facil|almorz|cenar|desayun|prepar|enchilada|comida|que como|platillo|menu|cocinar|hacer de comer|que se te antoja/.test(q);
 }
 
-function recipeHelp(items, q) {
-  const ranked = scoreRecipes(items);
-  const buyMode = /compr|falt|super|ingrediente/.test(q);
-  const pick = buyMode ? ranked.filter((r) => r.missingCount > 0).slice(0, 3) : ranked.slice(0, 3);
-  const recipes = (pick.length ? pick : ranked.slice(0, 3)).map((r) => ({
-    id: r.id,
-    name: r.name,
-    time: r.time,
-    how: r.how,
-    have: r.have,
-    missing: r.missing,
+function normalizeRecipes(list) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, 4).map((recipe, index) => ({
+    id: String(recipe.id || `r-${index}`).slice(0, 60),
+    name: String(recipe.name || "Receta").slice(0, 80),
+    time: String(recipe.time || "fácil").slice(0, 40),
+    how: String(recipe.how || "").slice(0, 280),
+    have: Array.isArray(recipe.have) ? recipe.have.map((x) => String(x).slice(0, 40)).slice(0, 8) : [],
+    missing: Array.isArray(recipe.missing) ? recipe.missing.map((x) => String(x).slice(0, 40)).slice(0, 8) : [],
   }));
-  const reply = buyMode
-    ? "Te dejo recetas fáciles. Aunque no tengas todo, dime si quieres hacer alguna y anoto lo que falte en compras."
-    : "Con lo de hoy, o comprando poquito, estas tres salen sin complicarse. Elige una y te agrego lo que falte.";
-  return { reply, recipes };
 }
 
-function localHelp(question, items) {
-  const q = fold(question);
-  const hay = usable(items);
-  const caducos = items.filter((i) => i.estado === "caduco");
-  const pronto = items.filter((i) => i.estado === "por caducar");
-  const falta = items.filter((i) => !i.hay || i.estado === "caduco");
-
-  if (wantsRecipes(q)) return recipeHelp(items, q);
-
-  if (/hola|buenas|quien eres/.test(q) && q.length < 24) {
-    return {
-      reply: "Soy Jarvis. Pregúntame lo que sea de la cocina: recetas aunque falte algo, caducidad o el súper.",
-      recipes: [],
-    };
-  }
-
-  if (/caduc|tirar|vence|pasad|echar a perder/.test(q) && !wantsRecipes(q)) {
-    if (!caducos.length && !pronto.length) {
-      return { reply: "Hoy no veo nada caducado. Si algo huele raro, igual no lo uses.", recipes: [] };
-    }
-    const parts = [];
-    if (caducos.length) parts.push(`Ya no conviene: ${names(caducos)}.`);
-    if (pronto.length) parts.push(`Úsalo pronto: ${names(pronto)}.`);
-    return { reply: parts.join(" "), recipes: [] };
-  }
-
-  if (/compr|super|falta|reponer|lista/.test(q)) {
-    if (!falta.length) {
-      return {
-        reply: "La lista está tranquila. Si quieres, te sugiero recetas fáciles y anotamos lo que falte.",
-        recipes: scoreRecipes(items).slice(0, 2).map((r) => ({
-          id: r.id,
-          name: r.name,
-          time: r.time,
-          how: r.how,
-          have: r.have,
-          missing: r.missing,
-        })),
-      };
-    }
-    return { reply: `Ahora mismo en compras veo: ${names(falta.slice(0, 12))}. ¿Te armo recetas fáciles con lo que falte?`, recipes: [] };
-  }
-
-  if (/donde esta|en que estante|ubicacion/.test(q)) {
-    const named = items.filter((i) => fold(i.nombre).split(/\s+/).some((w) => w.length > 3 && q.includes(w)));
-    const pick = named[0];
-    if (!pick) {
-      return { reply: hay.length ? `Lo anotado: ${hay.map((i) => `${i.nombre} (${i.ubicacion})`).join("; ")}.` : "No hay registro de ubicación todavía.", recipes: [] };
-    }
-    return {
-      reply: pick.hay ? `${pick.nombre} está en ${pick.ubicacion || "la nevera"}.` : `De ${pick.nombre} no hay. ¿Lo agrego a compras?`,
-      recipes: [],
-    };
-  }
-
-  if (/hay |tenemos |queda |tienes /.test(q)) {
-    const words = q.split(/\s+/).filter((w) => w.length > 3 && !["tenemos", "queda", "hay", "jarvis", "nevera"].includes(w));
-    const hits = items.filter((i) => words.some((w) => fold(i.nombre).includes(w)));
-    if (hits.length) {
-      return {
-        reply: hits
-          .map((i) => {
-            if (i.estado === "caduco") return `${i.nombre}: mejor no, ya caducó.`;
-            if (!i.hay) return `${i.nombre}: no hay. Si quieres, lo anoto en compras.`;
-            return `${i.nombre}: sí hay, en ${i.ubicacion || "la nevera"}.`;
-          })
-          .join(" "),
-        recipes: [],
-      };
+function parseAi(text) {
+  const raw = String(text || "").trim();
+  const block = raw.match(/<!--RECIPES\s*([\s\S]*?)-->/i);
+  if (block) {
+    const reply = raw.replace(block[0], "").trim();
+    try {
+      return { reply, recipes: normalizeRecipes(JSON.parse(block[1])) };
+    } catch {
+      return { reply, recipes: [] };
     }
   }
-
-  if (/nutri|calor|prote|salud|vitamina|dieta/.test(q)) {
-    return {
-      reply: "Sin receta de doctor: proteína (huevo, yogurt, pollo), color en el plato y agua. ¿Te sugiero un platillo fácil?",
-      recipes: [],
-    };
+  const fence = raw.match(/```json\s*([\s\S]*?)```/i);
+  if (fence) {
+    try {
+      const data = JSON.parse(fence[1]);
+      if (data && (data.reply || data.recipes)) {
+        return {
+          reply: String(data.reply || raw.replace(fence[0], "").trim()),
+          recipes: normalizeRecipes(data.recipes),
+        };
+      }
+    } catch {
+      /* texto plano */
+    }
   }
-
-  if (/que hay|inventario|que tenemos/.test(q)) {
-    if (!hay.length) return { reply: "En el registro no hay productos vigentes. Igual te puedo sugerir recetas y anotar ingredientes.", recipes: recipeHelp(items, "recetas").recipes };
-    return { reply: `Hay: ${names(hay)}.${pronto.length ? ` Úsalo pronto: ${names(pronto)}.` : ""}`, recipes: [] };
-  }
-
-  return recipeHelp(items, q);
+  return { reply: raw, recipes: [] };
 }
 
-async function askModel(system, messages) {
-  const groq = process.env.GROQ_API_KEY;
-  const openai = process.env.OPENAI_API_KEY;
-  const key = groq || openai;
-  if (!key) return null;
-  const url = groq
-    ? "https://api.groq.com/openai/v1/chat/completions"
-    : "https://api.openai.com/v1/chat/completions";
-  const model = process.env.AI_MODEL || (groq ? "llama-3.1-8b-instant" : "gpt-4o-mini");
+function completionsUrl(base) {
+  const b = String(base || "").replace(/\/$/, "");
+  if (!b) return "https://api.openai.com/v1/chat/completions";
+  if (b.endsWith("/chat/completions")) return b;
+  if (b.endsWith("/v1")) return `${b}/chat/completions`;
+  return `${b}/v1/chat/completions`;
+}
+
+async function chatOpenAI({ url, key, model, messages, extraHeaders = {} }) {
   const res = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
+      ...extraHeaders,
     },
     body: JSON.stringify({
       model,
-      temperature: 0.5,
-      max_tokens: 420,
-      messages: [{ role: "system", content: system }, ...messages],
+      temperature: 0.7,
+      max_tokens: 900,
+      messages,
     }),
   });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content?.trim() || null;
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`${res.status} ${raw.slice(0, 240)}`);
+  const data = JSON.parse(raw);
+  const text = data?.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error("sin texto");
+  return text;
+}
+
+async function tryOpenAIModels(url, key, messages, extraHeaders) {
+  const preferred = process.env.AI_MODEL;
+  const models = [...new Set([preferred, "gpt-4o-mini", "gpt-5-mini", "gpt-4.1-mini", "openai/gpt-4o-mini"].filter(Boolean))];
+  let last;
+  for (const model of models) {
+    try {
+      return await chatOpenAI({ url, key, model, messages, extraHeaders });
+    } catch (error) {
+      last = error;
+      if (!/404|400|model|not found|invalid/i.test(String(error.message))) throw error;
+    }
+  }
+  throw last || new Error("sin modelo");
+}
+
+async function chatGemini({ base, key, messages }) {
+  const model = process.env.AI_MODEL || "gemini-2.5-flash";
+  const url = `${String(base).replace(/\/$/, "")}/v1beta/models/${model}:generateContent`;
+  const system = messages.find((m) => m.role === "system")?.content || "";
+  const contents = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": key,
+    },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 900 },
+    }),
+  });
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`${res.status} ${raw.slice(0, 240)}`);
+  const data = JSON.parse(raw);
+  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("").trim();
+  if (!text) throw new Error("sin texto");
+  return text;
+}
+
+async function askModel(messages) {
+  const attempts = [];
+
+  const gatewayKey = process.env.NETLIFY_AI_GATEWAY_KEY;
+  const gatewayBase = process.env.NETLIFY_AI_GATEWAY_BASE_URL;
+  if (gatewayKey && gatewayBase) {
+    attempts.push(() => tryOpenAIModels(completionsUrl(gatewayBase), gatewayKey, messages));
+  }
+
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const openaiBase = process.env.OPENAI_BASE_URL;
+  if (openaiKey && openaiBase) {
+    const url = completionsUrl(openaiBase);
+    const already = gatewayBase && completionsUrl(gatewayBase) === url && openaiKey === gatewayKey;
+    if (!already) attempts.push(() => tryOpenAIModels(url, openaiKey, messages));
+  } else if (openaiKey && !gatewayKey) {
+    attempts.push(() => tryOpenAIModels(completionsUrl(openaiBase), openaiKey, messages));
+  }
+
+  const groq = process.env.GROQ_API_KEY;
+  if (groq) {
+    attempts.push(() =>
+      chatOpenAI({
+        url: "https://api.groq.com/openai/v1/chat/completions",
+        key: groq,
+        model: process.env.AI_MODEL || "llama-3.3-70b-versatile",
+        messages,
+      })
+    );
+  }
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiBase = process.env.GOOGLE_GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
+  if (geminiKey) {
+    attempts.push(() => chatGemini({ base: geminiBase, key: geminiKey, messages }));
+  }
+
+  const routerKey = process.env.OPENROUTER_API_KEY;
+  const routerBase = process.env.OPENROUTER_BASE_URL;
+  if (routerKey && routerBase) {
+    attempts.push(() =>
+      tryOpenAIModels(completionsUrl(routerBase).replace(/\/v1\/v1\//, "/v1/"), routerKey, messages)
+    );
+  }
+
+  let lastError = "sin proveedor";
+  for (const run of attempts) {
+    try {
+      const text = await run();
+      if (text) return text;
+    } catch (error) {
+      lastError = String(error.message || error);
+    }
+  }
+  throw new Error(lastError);
+}
+
+function localFridge(question, items) {
+  const q = fold(question);
+  const hay = usable(items);
+  const caducos = items.filter((i) => i.estado === "caduco");
+  const pronto = items.filter((i) => i.estado === "por caducar");
+  const names = (list) => list.map((i) => i.nombre).join(", ");
+
+  if (/caduc|tirar|vence|pasad/.test(q)) {
+    if (!caducos.length && !pronto.length) return "Hoy no veo nada caducado en el registro.";
+    return [caducos.length ? `Ya no conviene: ${names(caducos)}.` : "", pronto.length ? `Úsalo pronto: ${names(pronto)}.` : ""].join(" ").trim();
+  }
+  if (/que hay|inventario|que tenemos/.test(q)) {
+    return hay.length ? `En la nevera hay: ${names(hay)}.` : "En el registro no hay productos vigentes.";
+  }
+  if (/hay |tenemos |queda /.test(q)) {
+    const words = q.split(/\s+/).filter((w) => w.length > 3);
+    const hits = items.filter((i) => words.some((w) => fold(i.nombre).includes(w)));
+    if (hits.length) {
+      return hits
+        .map((i) => {
+          if (i.estado === "caduco") return `${i.nombre}: mejor no, ya caducó.`;
+          if (!i.hay) return `${i.nombre}: no hay.`;
+          return `${i.nombre}: sí hay, en ${i.ubicacion || "la nevera"}.`;
+        })
+        .join(" ");
+    }
+  }
+  return null;
+}
+
+function systemPrompt(items) {
+  return `Eres Jarvis, el asistente de la casa de Mario. Español mexicano, cálido, claro, sin relleno de robot.
+
+Puedes responder DE TODO lo que te pregunten: nevera, recetas, compras, matemáticas, cultura, organización, bromas, ideas, lo cotidiano. No eres un menú de botones: conversas de verdad.
+
+Tienes el inventario actual. NUNCA inventes que un producto está en la nevera si no aparece. Si caducó, avisa y no lo uses para cocinar. Si no hay, dilo y ofrece anotarlo en compras.
+
+Si sugieres recetas, di qué ya hay y qué faltaría. Máximo 3 recetas concretas. Cuando propongas recetas, al final (no lo leas en voz alta) agrega exactamente este bloque:
+
+<!--RECIPES
+[{"id":"slug","name":"Nombre","time":"15 min","how":"pasos cortos","have":["lo que sí hay"],"missing":["lo que falta"]}]
+-->
+
+Si no hay recetas, no pongas ese bloque.
+No des consejos médicos ni ayuda ilegal.
+Inventario:
+${JSON.stringify(items).slice(0, 7000)}`;
 }
 
 export default async (req) => {
@@ -318,37 +316,37 @@ export default async (req) => {
 
   try {
     const body = await req.json();
-    const question = String(body.question || "").trim().slice(0, 400);
+    const question = String(body.question || "").trim().slice(0, 1200);
     if (!question) {
       return new Response(JSON.stringify({ error: "Falta la pregunta" }), { status: 400, headers: cors });
     }
     const items = snapshot(body.items);
-    const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
-    const local = localHelp(question, items);
-    const system = `Eres Jarvis, asistente de cocina de casa. Español mexicano, breve, cálido.
-Puedes sugerir recetas fáciles AUNQUE falten ingredientes. Di qué ya hay, qué faltaría y pregunta si los agrego a la lista de compras.
-No inventes que un producto está en la nevera si no aparece en el inventario. Si caducó, no lo uses.
-No des consejos médicos.
-Inventario:\n${JSON.stringify(items, null, 0).slice(0, 6000)}`;
+    const history = Array.isArray(body.history) ? body.history.slice(-12) : [];
     const messages = [
+      { role: "system", content: systemPrompt(items) },
       ...history
         .filter((m) => m && m.role && m.content)
-        .map((m) => ({ role: m.role === "jarvis" ? "assistant" : "user", content: String(m.content).slice(0, 500) })),
+        .map((m) => ({
+          role: m.role === "jarvis" || m.role === "assistant" ? "assistant" : "user",
+          content: String(m.content).slice(0, 800),
+        })),
       { role: "user", content: question },
     ];
-    let reply = local.reply;
-    let source = "casa";
+
     try {
-      const ai = await askModel(system, messages);
-      if (ai) {
-        reply = ai;
-        source = "ia";
+      const parsed = parseAi(await askModel(messages));
+      let recipes = parsed.recipes;
+      if (!recipes.length && wantsRecipes(fold(question))) {
+        recipes = scoreRecipes(items).slice(0, 3);
       }
+      return new Response(JSON.stringify({ reply: parsed.reply, source: "ia", recipes }), { headers: cors });
     } catch {
-      /* casa */
+      const fridge = localFridge(question, items);
+      const reply = fridge
+        ? `${fridge} (Se me trabó el modelo un segundo; pregúntame otra vez si quieres más detalle.)`
+        : "Se me trabó la IA un segundo. Pregúntame otra vez, de la nevera o de lo que se te ocurra.";
+      return new Response(JSON.stringify({ reply, source: "casa", recipes: [] }), { headers: cors });
     }
-    const recipes = wantsRecipes(fold(question)) || local.recipes?.length ? local.recipes : [];
-    return new Response(JSON.stringify({ reply, source, recipes }), { headers: cors });
   } catch (error) {
     return new Response(JSON.stringify({ error: "No pude responder", detail: String(error) }), {
       status: 500,
