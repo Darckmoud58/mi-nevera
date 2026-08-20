@@ -194,11 +194,14 @@ function kitchenNudge(item) {
 }
 
 function shopWhy(item) {
-  if (needsToss(item)) return "Caducó · reponer";
-  if (item.wanted && inFridge(item)) return "Lo anotaste";
-  if (!inFridge(item)) return "Se acabó";
-  if (trackingOf(item) === "cuenta") return "Quedan pocas";
-  return "Traer";
+  const n = plannedBuy(item);
+  const unit = item.buyUnit || (trackingOf(item) === "hay" ? "pzas" : item.unit || "pzas");
+  const how = `Traer ${formatQty(n)} ${unit}`;
+  if (needsToss(item)) return `Caducó · ${how}`;
+  if (item.wanted && inFridge(item)) return `Lo anotaste · ${how}`;
+  if (!inFridge(item)) return `Se acabó · ${how}`;
+  if (trackingOf(item) === "cuenta") return `Quedan pocas · ${how}`;
+  return how;
 }
 
 function toast(message) {
@@ -514,6 +517,11 @@ function renderShop() {
               <p>${escapeHtml(shopWhy(item))}</p>
             </div>
             <div class="shop-side">
+              <div class="qty shop-qty">
+                <button type="button" data-act="buy-minus" data-id="${item.id}" aria-label="Menos a comprar">−</button>
+                <b>${formatQty(plannedBuy(item))}</b>
+                <button type="button" data-act="buy-plus" data-id="${item.id}" aria-label="Más a comprar">+</button>
+              </div>
               ${needsToss(item) ? `<button class="tiny danger" data-act="toss" data-id="${item.id}">Ya la tiré</button>` : `<button class="tiny" data-act="unlist" data-id="${item.id}">Quitar</button>`}
             </div>
           </article>`
@@ -778,31 +786,88 @@ async function onListClick(event) {
     fillForm(item);
     return;
   }
+  if (btn.dataset.act === "buy-plus") {
+    item.buyQty = plannedBuy(item) + 1;
+    item.updatedAt = new Date().toISOString();
+  }
+  if (btn.dataset.act === "buy-minus") {
+    item.buyQty = Math.max(1, plannedBuy(item) - 1);
+    item.updatedAt = new Date().toISOString();
+  }
   if (btn.dataset.act === "bought") {
-    item.wanted = false;
-    if (trackingOf(item) === "hay") {
-      item.qty = 1;
-      item.expiry = "";
-      toast(`${item.name} ya está. Anota la caducidad nueva en Editar`);
-    } else {
-      item.qty = Math.max(Number(item.minQty || 1), Number(item.qty) + 1);
-      toast(`${item.name} ya está en la nevera`);
-    }
+    markBought(item);
   }
   await save();
 }
 
-async function putOnShopList(name, { quiet = false } = {}) {
+function parseShopInput(raw) {
+  let text = String(raw || "").trim();
+  let qty = null;
+  const lead = text.match(/^(\d+)\s*(?:x\s*)?(.+)$/i);
+  const trailX = text.match(/^(.+?)\s*[x×]\s*(\d+)$/i);
+  const trail = text.match(/^(.+?)\s+(\d+)$/);
+  if (lead && lead[2] && /[a-záéíóúñ]/i.test(lead[2])) {
+    qty = Number(lead[1]);
+    text = lead[2].trim();
+  } else if (trailX) {
+    text = trailX[1].trim();
+    qty = Number(trailX[2]);
+  } else if (trail && trail[2]) {
+    text = trail[1].trim();
+    qty = Number(trail[2]);
+  }
+  text = text.replace(/^(unas?|unos|unosos)\s+/i, "");
+  return { name: text, qty: qty && qty > 0 ? qty : null };
+}
+
+function plannedBuy(item) {
+  const n = Number(item.buyQty);
+  if (n > 0) return n;
+  if (trackingOf(item) === "cuenta") {
+    const need = Number(item.minQty || 1);
+    const have = Number(item.qty || 0);
+    return Math.max(1, need - have + 1);
+  }
+  return 1;
+}
+
+function markBought(item) {
+  const n = Math.max(1, plannedBuy(item));
+  const unit = item.buyUnit || (UNITS.includes(item.unit) ? item.unit : "pzas");
+  item.wanted = false;
+  item.buyQty = n;
+  item.location = item.location || "Estante medio";
+  item.category = item.category || guessCategory(item.name);
+  item.updatedAt = new Date().toISOString();
+  if (trackingOf(item) === "hay") {
+    item.qty = 1;
+    item.unit = "hay";
+    item.expiry = item.expiry || "";
+    toast(`${item.name}: ya hay. Si cambió la fecha, anótala en Editar`);
+    return;
+  }
+  item.tracking = "cuenta";
+  item.unit = unit;
+  item.qty = n;
+  item.minQty = Number(item.minQty || 1);
+  toast(`${item.name}: ${formatQty(n)} ${unit} en la nevera`);
+}
+
+async function putOnShopList(name, { quiet = false, qty, unit } = {}) {
   if (state.houseReady && !canEdit()) {
     if (!quiet) toast("En este hogar solo puedes consultar");
     return false;
   }
-  const label = String(name || "").trim();
+  const parsed = parseShopInput(name);
+  const label = parsed.name;
   if (!label) return false;
+  const buyQty = Math.max(1, Number(qty || parsed.qty || 1));
+  const buyUnit = unit || "pzas";
   const existing = state.items.find((i) => i.name.toLowerCase() === label.toLowerCase());
   if (existing) {
-    if (needsBuy(existing)) return false;
     existing.wanted = true;
+    existing.buyQty = buyQty;
+    existing.buyUnit = buyUnit;
     existing.updatedAt = new Date().toISOString();
     return true;
   }
@@ -815,32 +880,54 @@ async function putOnShopList(name, { quiet = false } = {}) {
     location: "Estante medio",
     tracking,
     qty: 0,
-    unit: tracking === "hay" ? "hay" : "pzas",
+    unit: tracking === "hay" ? "hay" : buyUnit,
     minQty: 1,
     expiry: "",
     notes: "",
     wanted: true,
+    buyQty,
+    buyUnit,
     source: "shop",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
-  if (!quiet) toast(`${label} se agregó a la lista`);
+  if (!quiet) toast(`${label}: traer ${formatQty(buyQty)} ${buyUnit}`);
   return true;
+}
+
+function askHowMany(name) {
+  const qtyEl = $("shopAddQty");
+  toast(`¿Cuántas ${name}? Pon el número y agrega`);
+  qtyEl?.classList.add("is-asking");
+  qtyEl?.focus();
+  qtyEl?.select?.();
 }
 
 async function addToShop(event) {
   event.preventDefault();
-  const name = $("shopAddName").value.trim();
-  if (!name) return;
-  const existing = state.items.find((i) => i.name.toLowerCase() === name.toLowerCase());
-  if (existing && needsBuy(existing)) {
+  const raw = $("shopAddName").value.trim();
+  if (!raw) return;
+  const parsed = parseShopInput(raw);
+  if (!parsed.name) return;
+  const qtyField = Number($("shopAddQty")?.value || 0);
+  const qty = parsed.qty || (qtyField > 0 ? qtyField : null);
+  if (!qty) {
+    askHowMany(parsed.name);
+    return;
+  }
+  const unit = $("shopAddUnit")?.value || "pzas";
+  const existing = state.items.find((i) => i.name.toLowerCase() === parsed.name.toLowerCase());
+  if (existing && needsBuy(existing) && Number(existing.buyQty || 0) === qty) {
     toast(`${existing.name} ya está en la lista`);
   } else {
-    await putOnShopList(name);
+    await putOnShopList(parsed.name, { qty, unit });
     await save();
-    if (existing) toast(`${existing.name} se agregó a compras`);
   }
   $("shopAddName").value = "";
+  if ($("shopAddQty")) {
+    $("shopAddQty").value = "";
+    $("shopAddQty").classList.remove("is-asking");
+  }
   $("shopAddName").focus();
 }
 
@@ -935,7 +1022,10 @@ function bind() {
     const chip = e.target.closest("[data-suggest]");
     if (!chip) return;
     $("shopAddName").value = chip.dataset.suggest;
-    addToShop({ preventDefault() {} });
+    askHowMany(chip.dataset.suggest);
+  });
+  $("shopAddQty")?.addEventListener("input", () => {
+    $("shopAddQty").classList.remove("is-asking");
   });
   $("ideaNext").addEventListener("click", () => {
     state.ideaIndex += 1;

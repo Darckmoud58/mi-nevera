@@ -78,11 +78,20 @@
       <section class="view" id="view-compras" data-view="compras">
         <div class="panel-intro">
           <h2>Lista de compras</h2>
-          <p>Anota, tacha y listo. Como el papel del refri, pero más limpio.</p>
+          <p>Dile qué y cuántas. Si no dices el número, te lo pregunta. Al tachar “ya lo compré”, esa cantidad entra al inventario.</p>
         </div>
         <form class="shop-add" id="shopAddForm" autocomplete="off">
-          <label class="sr-only" for="shopAddName">Agregar a la lista</label>
-          <input id="shopAddName" maxlength="80" placeholder="¿Qué hay que traer?" required />
+          <label class="sr-only" for="shopAddName">Producto</label>
+          <input id="shopAddName" maxlength="80" placeholder="¿Qué hay que traer? Ej. cebolla" required />
+          <label class="sr-only" for="shopAddQty">Cantidad</label>
+          <input id="shopAddQty" type="number" min="1" step="1" inputmode="numeric" placeholder="¿Cuántas?" title="¿Cuántas?" />
+          <label class="sr-only" for="shopAddUnit">Unidad</label>
+          <select id="shopAddUnit">
+            <option value="pzas">pzas</option>
+            <option value="paquetes">paquetes</option>
+            <option value="bolsas">bolsas</option>
+            <option value="docena">docena</option>
+          </select>
           <button type="submit" class="btn primary">Agregar</button>
         </form>
         <div class="suggest" id="shopSuggest"></div>
@@ -273,6 +282,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./js/app.js?v=19" type="module"></script>
+    <script src="./js/app.js?v=21" type="module"></script>
   </body>
 </html>

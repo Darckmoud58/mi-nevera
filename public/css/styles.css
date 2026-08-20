@@ -359,24 +359,37 @@ h1 {
 
 .shop-add {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr 72px 108px auto;
   gap: 8px;
   margin-bottom: 14px;
+  align-items: stretch;
 }
 
-.shop-add input {
+.shop-add input,
+.shop-add select {
   width: 100%;
   border: 1px solid var(--line);
   background: #fbf8f1;
   border-radius: 14px;
-  padding: 13px 14px;
+  padding: 13px 10px;
   font: inherit;
   color: var(--ink);
 }
 
-.shop-add input:focus {
+.shop-add input:focus,
+.shop-add select:focus {
   outline: 2px solid var(--sun);
   border-color: transparent;
+}
+
+.shop-add input.is-asking {
+  outline: 2px solid var(--tomato);
+  border-color: transparent;
+  background: #fff4ee;
+}
+
+.shop-qty {
+  min-width: 108px;
 }
 
 .shop-add .btn {
@@ -1106,6 +1119,16 @@ body.readonly .shop-add {
 
   #view-qr {
     display: block !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .shop-add {
+    grid-template-columns: 1fr 72px;
+  }
+
+  .shop-add .btn {
+    grid-column: 1 / -1;
   }
 }
 
