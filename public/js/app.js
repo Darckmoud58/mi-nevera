@@ -975,12 +975,21 @@ function bind() {
   });
   $("houseForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const btn = $("houseBtn");
+    const hint = $("houseHint");
+    if (btn) btn.disabled = true;
+    if (hint) hint.textContent = "Creando el hogar…";
     try {
       await createHousehold($("houseName").value);
+      if (hint) hint.textContent = "Listo. Entrando…";
       toast("Hogar listo");
       await bootCloud();
     } catch (error) {
-      toast(explainError(error));
+      const msg = explainError(error);
+      if (hint) hint.textContent = msg;
+      toast(msg);
+    } finally {
+      if (btn) btn.disabled = false;
     }
   });
   $("joinForm").addEventListener("submit", async (event) => {

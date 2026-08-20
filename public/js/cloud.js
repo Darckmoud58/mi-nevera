@@ -245,15 +245,20 @@ export async function loadHousehold() {
 }
 
 export async function createHousehold(name) {
-  if (!client || !session) throw new Error("Inicia sesión");
+  if (!client) throw new Error("Inicia sesión");
+  const { data: sess } = await client.auth.getSession();
+  session = sess?.session || session;
+  if (!session) throw new Error("Inicia sesión");
   const label = String(name || "").trim() || "Mi hogar";
-  const { data, error } = await client
-    .from("households")
-    .insert({ name: label, created_by: session.user.id })
-    .select("id, name")
-    .single();
+
+  const rpc = await client.rpc("create_household", { p_name: label });
+  if (!rpc.error && rpc.data) {
+    localStorage.setItem(HOUSE_KEY, rpc.data);
+    return loadHousehold();
+  }
+
+  const { error } = await client.from("households").insert({ name: label, created_by: session.user.id });
   if (error) throw error;
-  localStorage.setItem(HOUSE_KEY, data.id);
   return loadHousehold();
 }
 

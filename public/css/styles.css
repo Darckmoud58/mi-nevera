@@ -797,7 +797,7 @@ body.chat-open .fab {
   opacity: 0;
   pointer-events: none;
   transition: 0.25s ease;
-  z-index: 30;
+  z-index: 120;
 }
 
 .toast.show {
