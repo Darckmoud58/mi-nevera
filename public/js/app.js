@@ -624,13 +624,22 @@ async function onRenameHouse(event) {
 }
 
 async function onInvite(inviteRole) {
+  const hint = $("inviteHint");
   try {
+    if (hint) hint.textContent = "Generando enlace…";
     const url = await createInvite(inviteRole);
-    await navigator.clipboard.writeText(url);
-    $("inviteHint").textContent = "Enlace copiado. Pégalo en WhatsApp.";
-    toast("Invitación copiada");
+    try {
+      await navigator.clipboard.writeText(url);
+      if (hint) hint.textContent = "Enlace copiado. Pégalo en WhatsApp.";
+      toast("Invitación copiada");
+    } catch {
+      if (hint) hint.textContent = url;
+      toast("Copia el enlace que aparece abajo");
+    }
   } catch (error) {
-    toast(explainError(error));
+    const msg = explainError(error);
+    if (hint) hint.textContent = msg;
+    toast(msg);
   }
 }
 

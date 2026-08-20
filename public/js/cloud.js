@@ -279,10 +279,9 @@ export async function createInvite(inviteRole = "adult") {
     p_role: inviteRole,
   });
   if (error) throw error;
-  const url = new URL(location.href);
-  url.hash = "";
+  const url = new URL(location.origin + location.pathname.replace(/index\.html$/, ""));
   url.search = "";
-  url.pathname = url.pathname.replace(/index\.html$/, "");
+  url.hash = "";
   url.searchParams.set("invitar", data);
   return url.toString();
 }
@@ -314,15 +313,23 @@ export function userLabel() {
 }
 
 export function explainError(error) {
-  const msg = String(error?.message || error || "");
-  if (/schema|relation|does not exist|function/i.test(msg)) {
-    return "Falta pegar el SQL de supabase/schema.sql en el proyecto Free.";
+  const msg = String(error?.message || error?.details || error || "");
+  const code = String(error?.code || error?.hint || "");
+  const full = `${msg} ${code}`.trim();
+  if (/gen_random_bytes|pgcrypto/i.test(full)) {
+    return "Falta activar pgcrypto. Corre otra vez patch-invitar.sql.";
   }
-  if (/Invalid login|provider/i.test(msg) && /google/i.test(msg)) {
-    return "Google aún no está activo en Authentication → Providers.";
+  if (/schema cache|Could not find the function/i.test(full)) {
+    return "Supabase aún no ve la función. En SQL Editor corre: notify pgrst, 'reload schema'; y espera 10 segundos.";
   }
-  if (/rate|429|email/i.test(msg)) {
+  if (/relation .* does not exist/i.test(full)) {
+    return "Falta una tabla. Corre supabase/schema.sql en el SQL Editor.";
+  }
+  if (/Invalid login|provider is not enabled/i.test(full) && /google/i.test(full)) {
+    return "Google aún no está activo en Sign In / Providers.";
+  }
+  if (/rate limit|429|over_email_send_rate_limit/i.test(full)) {
     return "El correo gratis de Supabase tiene tope. Espera un rato o usa Google.";
   }
-  return msg.slice(0, 180);
+  return (msg || full).slice(0, 220);
 }

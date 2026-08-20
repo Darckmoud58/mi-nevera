@@ -106,7 +106,7 @@ begin
   if p_role not in ('adult', 'guest') then
     p_role := 'adult';
   end if;
-  tok := replace(replace(replace(encode(gen_random_bytes(18), 'base64'), '/', '_'), '+', '-'), '=', '');
+  tok := md5(random()::text || clock_timestamp()::text || p_household_id::text || auth.uid()::text);
   insert into public.invites (household_id, token, role, invited_by)
   values (p_household_id, tok, p_role, auth.uid());
   return tok;
