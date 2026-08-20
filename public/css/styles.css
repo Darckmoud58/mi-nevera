@@ -492,6 +492,38 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
+.qty-input {
+  width: 56px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qty-input:focus {
+  outline: 2px solid var(--sun);
+  border-color: transparent;
+}
+
+.qty-unit {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 2.4em;
+}
+
 .switch {
   align-self: start;
   min-width: 86px;

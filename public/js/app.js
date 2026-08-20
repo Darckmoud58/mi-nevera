@@ -390,7 +390,8 @@ function itemCard(item, mode) {
       </button>`
     : `<div class="qty">
         <button type="button" data-act="minus" data-id="${item.id}" aria-label="Restar">−</button>
-        <b>${formatQty(item.qty)} ${escapeHtml(item.unit || "pzas")}</b>
+        <input class="qty-input" type="number" min="0" step="1" inputmode="numeric" data-qty="have" data-id="${item.id}" value="${escapeHtml(formatQty(item.qty))}" aria-label="Cantidad en nevera" />
+        <span class="qty-unit">${escapeHtml(item.unit || "pzas")}</span>
         <button type="button" data-act="plus" data-id="${item.id}" aria-label="Sumar">+</button>
       </div>`;
 
@@ -519,7 +520,7 @@ function renderShop() {
             <div class="shop-side">
               <div class="qty shop-qty">
                 <button type="button" data-act="buy-minus" data-id="${item.id}" aria-label="Menos a comprar">−</button>
-                <b>${formatQty(plannedBuy(item))}</b>
+                <input class="qty-input" type="number" min="1" step="1" inputmode="numeric" data-qty="buy" data-id="${item.id}" value="${escapeHtml(formatQty(plannedBuy(item)))}" aria-label="Cantidad a comprar" />
                 <button type="button" data-act="buy-plus" data-id="${item.id}" aria-label="Más a comprar">+</button>
               </div>
               ${needsToss(item) ? `<button class="tiny danger" data-act="toss" data-id="${item.id}">Ya la tiré</button>` : `<button class="tiny" data-act="unlist" data-id="${item.id}">Quitar</button>`}
@@ -800,6 +801,57 @@ async function onListClick(event) {
   await save();
 }
 
+function qtyMin(input) {
+  return input.dataset.qty === "have" ? 0 : 1;
+}
+
+function readQtyInput(input) {
+  const raw = Number(String(input.value || "").replace(",", "."));
+  const min = qtyMin(input);
+  if (!Number.isFinite(raw) || raw < min) return min;
+  return Math.round(raw);
+}
+
+function applyQtyInput(input, { commit = false } = {}) {
+  const item = findItem(input.dataset.id);
+  if (!item) return false;
+  if (state.houseReady && !canEdit()) {
+    toast("En este hogar solo puedes consultar");
+    input.value = input.dataset.qty === "buy" ? plannedBuy(item) : item.qty;
+    return false;
+  }
+  const empty = String(input.value).trim() === "";
+  if (empty && !commit) return false;
+  const n = readQtyInput(input);
+  if (commit) input.value = String(n);
+  item.updatedAt = new Date().toISOString();
+  if (input.dataset.qty === "buy") {
+    item.buyQty = Math.max(1, n);
+    const why = input.closest(".shop-row")?.querySelector("p");
+    if (why) why.textContent = shopWhy(item);
+  } else {
+    item.qty = Math.max(0, n);
+  }
+  return true;
+}
+
+async function onQtyTyped(event) {
+  const input = event.target.closest("input[data-qty]");
+  if (!input) return;
+  if (event.type === "keydown") {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    input.blur();
+    return;
+  }
+  if (event.type === "input") {
+    applyQtyInput(input);
+    return;
+  }
+  applyQtyInput(input, { commit: true });
+  await save();
+}
+
 function parseShopInput(raw) {
   let text = String(raw || "").trim();
   let qty = null;
@@ -1018,6 +1070,11 @@ function bind() {
 
   $("inventoryList").addEventListener("click", onListClick);
   $("shopList").addEventListener("click", onListClick);
+  for (const list of ["inventoryList", "shopList"]) {
+    $(list).addEventListener("input", onQtyTyped);
+    $(list).addEventListener("change", onQtyTyped);
+    $(list).addEventListener("keydown", onQtyTyped);
+  }
   $("shopSuggest").addEventListener("click", (e) => {
     const chip = e.target.closest("[data-suggest]");
     if (!chip) return;
